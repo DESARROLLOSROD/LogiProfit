@@ -26,26 +26,26 @@ export class UsuariosController {
 
   @Post()
   @ApiOperation({ summary: 'Crear nuevo usuario' })
-  create(@Request() req: any: any, @Body() dto: CreateUsuarioDto) {
+  create(@Request() req: any, @Body() dto: CreateUsuarioDto) {
     return this.usuariosService.create(req.user.empresaId, dto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Listar usuarios de la empresa' })
-  findAll(@Request() req: any: any) {
+  findAll(@Request() req: any,) {
     return this.usuariosService.findAll(req.user.empresaId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener detalle de usuario' })
-  findOne(@Request() req: any: any, @Param('id', ParseIntPipe) id: number) {
+  findOne(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.usuariosService.findOne(id, req.user.empresaId);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar usuario' })
   update(
-    @Request() req: any: any,
+    @Request() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateUsuarioDto,
   ) {
@@ -54,13 +54,13 @@ export class UsuariosController {
 
   @Patch(':id/toggle-activo')
   @ApiOperation({ summary: 'Activar/desactivar usuario' })
-  toggleActivo(@Request() req: any: any, @Param('id', ParseIntPipe) id: number) {
+  toggleActivo(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.usuariosService.toggleActivo(id, req.user.empresaId);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Eliminar usuario' })
-  delete(@Request() req: any: any, @Param('id', ParseIntPipe) id: number) {
+  delete(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.usuariosService.delete(id, req.user.empresaId);
   }
 }

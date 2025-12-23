@@ -33,14 +33,14 @@ export class GastosController {
   @Post()
   @ApiOperation({ summary: 'Registrar nuevo gasto' })
   @ApiResponse({ status: 201, description: 'Gasto registrado' })
-  create(@Request() req: any: any, @Body() dto: CreateGastoDto) {
+  create(@Request() req: any, @Body() dto: CreateGastoDto) {
     return this.gastosService.create(req.user.empresaId, dto);
   }
 
   @Get('flete/:fleteId')
   @ApiOperation({ summary: 'Listar gastos de un flete' })
   findAllByFlete(
-    @Request() req: any: any,
+    @Request() req: any,
     @Param('fleteId', ParseIntPipe) fleteId: number,
   ) {
     return this.gastosService.findAllByFlete(fleteId, req.user.empresaId);
@@ -51,7 +51,7 @@ export class GastosController {
   @ApiQuery({ name: 'fechaDesde', required: true })
   @ApiQuery({ name: 'fechaHasta', required: true })
   getResumen(
-    @Request() req: any: any,
+    @Request() req: any,
     @Query('fechaDesde') fechaDesde: string,
     @Query('fechaHasta') fechaHasta: string,
   ) {
@@ -64,14 +64,14 @@ export class GastosController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener detalle de gasto' })
-  findOne(@Request() req: any: any, @Param('id', ParseIntPipe) id: number) {
+  findOne(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.gastosService.findOne(id, req.user.empresaId);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar gasto' })
   update(
-    @Request() req: any: any,
+    @Request() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateGastoDto,
   ) {
@@ -80,19 +80,19 @@ export class GastosController {
 
   @Patch(':id/validar')
   @ApiOperation({ summary: 'Validar gasto (contabilidad)' })
-  validar(@Request() req: any: any, @Param('id', ParseIntPipe) id: number) {
+  validar(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.gastosService.validar(id, req.user.empresaId, req.user.id);
   }
 
   @Patch(':id/invalidar')
   @ApiOperation({ summary: 'Invalidar gasto' })
-  invalidar(@Request() req: any: any, @Param('id', ParseIntPipe) id: number) {
+  invalidar(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.gastosService.invalidar(id, req.user.empresaId);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Eliminar gasto' })
-  delete(@Request() req: any: any, @Param('id', ParseIntPipe) id: number) {
+  delete(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.gastosService.delete(id, req.user.empresaId);
   }
 }

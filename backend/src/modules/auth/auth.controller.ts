@@ -32,7 +32,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Obtener usuario actual' })
   @ApiResponse({ status: 200, description: 'Datos del usuario' })
-  async me(@Request() req: any) {
+  async me(@Request() req: any,) {
     return {
       id: req.user.id,
       nombre: req.user.nombre,

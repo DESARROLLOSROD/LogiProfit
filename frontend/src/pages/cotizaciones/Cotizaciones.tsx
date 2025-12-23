@@ -101,7 +101,7 @@ export default function Cotizaciones() {
                 <td className={cot.utilidadEsperada >= 0 ? 'text-green-600' : 'text-red-600'}>
                   {formatMoney(cot.utilidadEsperada)}
                 </td>
-                <td>{cot.margenEsperado.toFixed(1)}%</td>
+                <td>{(Number(cot.margenEsperado) || 0).toFixed(1)}%</td>
                 <td>
                   <span className={`badge ${getEstadoBadge(cot.estado)}`}>
                     {cot.estado}

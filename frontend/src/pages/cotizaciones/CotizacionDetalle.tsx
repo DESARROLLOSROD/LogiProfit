@@ -67,8 +67,8 @@ export default function CotizacionDetalle() {
 
   if (!cotizacion) return null
 
-  const totalCostos = cotizacion.dieselEstimado + cotizacion.casetasEstimado + 
-                      cotizacion.viaticosEstimado + cotizacion.salarioEstimado
+  const totalCostos = cotizacion.dieselEstimado + cotizacion.casetasEstimado +
+    cotizacion.viaticosEstimado + cotizacion.salarioEstimado
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -152,7 +152,7 @@ export default function CotizacionDetalle() {
             </div>
             <div className="p-4 bg-blue-50 rounded-lg">
               <p className="text-sm text-gray-500">Margen</p>
-              <p className="text-xl font-bold text-blue-600">{cotizacion.margenEsperado.toFixed(1)}%</p>
+              <p className="text-xl font-bold text-blue-600">{(Number(cotizacion.margenEsperado) || 0).toFixed(1)}%</p>
             </div>
           </div>
         </div>

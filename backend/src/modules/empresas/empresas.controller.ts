@@ -14,7 +14,7 @@ export class EmpresasController {
 
   @Get('mi-empresa')
   @ApiOperation({ summary: 'Obtener datos de mi empresa' })
-  findMiEmpresa(@Request() req: any) {
+  findMiEmpresa(@Request() req: any,) {
     return this.empresasService.findOne(req.user.empresaId);
   }
 
@@ -26,7 +26,7 @@ export class EmpresasController {
 
   @Get('mi-empresa/estadisticas')
   @ApiOperation({ summary: 'Obtener estadísticas generales de la empresa' })
-  getEstadisticas(@Request() req: any) {
+  getEstadisticas(@Request() req: any,) {
     return this.empresasService.getEstadisticas(req.user.empresaId);
   }
 }

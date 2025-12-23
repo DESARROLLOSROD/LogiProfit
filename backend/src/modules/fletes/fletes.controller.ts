@@ -36,7 +36,7 @@ export class FletesController {
   @Post()
   @ApiOperation({ summary: 'Crear nuevo flete' })
   @ApiResponse({ status: 201, description: 'Flete creado exitosamente' })
-  create(@Request() req: any: any, @Body() createFleteDto: CreateFleteDto) {
+  create(@Request() req: any, @Body() createFleteDto: CreateFleteDto) {
     return this.fletesService.create(req.user.empresaId, createFleteDto);
   }
 
@@ -45,7 +45,7 @@ export class FletesController {
   @ApiQuery({ name: 'estado', required: false, enum: EstadoFlete })
   @ApiQuery({ name: 'clienteId', required: false, type: Number })
   findAll(
-    @Request() req: any: any,
+    @Request() req: any,
     @Query('estado') estado?: EstadoFlete,
     @Query('clienteId') clienteId?: number,
   ) {
@@ -57,7 +57,7 @@ export class FletesController {
   @ApiQuery({ name: 'mes', required: true, type: Number })
   @ApiQuery({ name: 'anio', required: true, type: Number })
   getResumenMensual(
-    @Request() req: any: any,
+    @Request() req: any,
     @Query('mes', ParseIntPipe) mes: number,
     @Query('anio', ParseIntPipe) anio: number,
   ) {
@@ -67,14 +67,14 @@ export class FletesController {
   @Get(':id')
   @ApiOperation({ summary: 'Obtener detalle de un flete' })
   @ApiResponse({ status: 200, description: 'Detalle del flete con utilidad calculada' })
-  findOne(@Request() req: any: any, @Param('id', ParseIntPipe) id: number) {
+  findOne(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.fletesService.findOne(id, req.user.empresaId);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar flete' })
   update(
-    @Request() req: any: any,
+    @Request() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Body() updateFleteDto: UpdateFleteDto,
   ) {
@@ -85,7 +85,7 @@ export class FletesController {
   @ApiOperation({ summary: 'Cambiar estado del flete' })
   @ApiQuery({ name: 'estado', required: true, enum: EstadoFlete })
   cambiarEstado(
-    @Request() req: any: any,
+    @Request() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Query('estado') estado: EstadoFlete,
   ) {
@@ -94,7 +94,7 @@ export class FletesController {
 
   @Get(':id/utilidad')
   @ApiOperation({ summary: 'Calcular utilidad del flete' })
-  calcularUtilidad(@Request() req: any: any, @Param('id', ParseIntPipe) id: number) {
+  calcularUtilidad(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.fletesService.calcularUtilidad(id, req.user.empresaId);
   }
 
@@ -103,7 +103,7 @@ export class FletesController {
   @Post(':id/camiones')
   @ApiOperation({ summary: 'Asignar camión al flete' })
   asignarCamion(
-    @Request() req: any: any,
+    @Request() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AsignarCamionDto,
   ) {
@@ -113,7 +113,7 @@ export class FletesController {
   @Delete(':id/camiones/:camionId')
   @ApiOperation({ summary: 'Desasignar camión del flete' })
   desasignarCamion(
-    @Request() req: any: any,
+    @Request() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Param('camionId', ParseIntPipe) camionId: number,
   ) {
@@ -123,7 +123,7 @@ export class FletesController {
   @Post(':id/choferes')
   @ApiOperation({ summary: 'Asignar chofer al flete (calcula salario automático)' })
   asignarChofer(
-    @Request() req: any: any,
+    @Request() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AsignarChoferDto,
   ) {
@@ -133,7 +133,7 @@ export class FletesController {
   @Delete(':id/choferes/:choferId')
   @ApiOperation({ summary: 'Desasignar chofer del flete' })
   desasignarChofer(
-    @Request() req: any: any,
+    @Request() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Param('choferId', ParseIntPipe) choferId: number,
   ) {

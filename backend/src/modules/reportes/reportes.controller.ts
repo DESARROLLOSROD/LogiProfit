@@ -15,7 +15,7 @@ export class ReportesController {
 
   @Get('dashboard')
   @ApiOperation({ summary: 'Obtener dashboard principal' })
-  getDashboard(@Request() req: any) {
+  getDashboard(@Request() req: any,) {
     return this.reportesService.getDashboard(req.user.empresaId);
   }
 
