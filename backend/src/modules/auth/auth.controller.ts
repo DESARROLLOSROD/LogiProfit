@@ -1,14 +1,15 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Request, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
+
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('login')
   @ApiOperation({ summary: 'Iniciar sesión' })
@@ -31,7 +32,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Obtener usuario actual' })
   @ApiResponse({ status: 200, description: 'Datos del usuario' })
-  async me(@Request() req) {
+  async me(@Request() req: any) {
     return {
       id: req.user.id,
       nombre: req.user.nombre,
