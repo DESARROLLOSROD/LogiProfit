@@ -1,0 +1,304 @@
+// prisma/schema.prisma
+// LogiProfit - Sistema de Rentabilidad para Empresas de Fletes
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENTIDADES CORE ====================
+
+model Empresa {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  rfc       String?  @unique
+  plan      Plan     @default(BASICO)
+  activa    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  usuarios     Usuario[]
+  clientes     Cliente[]
+  camiones     Camion[]
+  choferes     Chofer[]
+  cotizaciones Cotizacion[]
+  fletes       Flete[]
+
+  @@map("empresas")
+}
+
+enum Plan {
+  BASICO
+  PROFESIONAL
+  ENTERPRISE
+}
+
+model Usuario {
+  id        Int         @id @default(autoincrement())
+  empresaId Int
+  nombre    String
+  email     String      @unique
+  password  String
+  rol       RolUsuario
+  activo    Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@map("usuarios")
+}
+
+enum RolUsuario {
+  ADMIN
+  OPERADOR
+  CHOFER
+  CONTABILIDAD
+  DIRECCION
+}
+
+model Cliente {
+  id        Int      @id @default(autoincrement())
+  empresaId Int
+  nombre    String
+  rfc       String?
+  email     String?
+  telefono  String?
+  direccion String?
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  empresa      Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  cotizaciones Cotizacion[]
+  fletes       Flete[]
+
+  @@map("clientes")
+}
+
+// ==================== COTIZACIONES ====================
+
+model Cotizacion {
+  id               Int              @id @default(autoincrement())
+  empresaId        Int
+  clienteId        Int
+  folio            String           @unique
+  origen           String
+  destino          String
+  kmEstimados      Decimal          @db.Decimal(10, 2)
+  precioCotizado   Decimal          @db.Decimal(12, 2)
+  
+  // Costos estimados
+  dieselEstimado   Decimal          @default(0) @db.Decimal(12, 2)
+  casetasEstimado  Decimal          @default(0) @db.Decimal(12, 2)
+  viaticosEstimado Decimal          @default(0) @db.Decimal(12, 2)
+  salarioEstimado  Decimal          @default(0) @db.Decimal(12, 2)
+  otrosEstimado    Decimal          @default(0) @db.Decimal(12, 2)
+  
+  utilidadEsperada Decimal          @db.Decimal(12, 2)
+  margenEsperado   Decimal          @db.Decimal(5, 2) // Porcentaje
+  
+  estado           EstadoCotizacion @default(BORRADOR)
+  notas            String?
+  validoHasta      DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  empresa  Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  cliente  Cliente  @relation(fields: [clienteId], references: [id])
+  fletes   Flete[]
+
+  @@map("cotizaciones")
+}
+
+enum EstadoCotizacion {
+  BORRADOR
+  ENVIADA
+  APROBADA
+  RECHAZADA
+  CONVERTIDA
+  CANCELADA
+}
+
+// ==================== FLETES ====================
+
+model Flete {
+  id            Int         @id @default(autoincrement())
+  empresaId     Int
+  cotizacionId  Int?
+  clienteId     Int
+  folio         String      @unique
+  
+  origen        String
+  destino       String
+  kmReales      Decimal?    @db.Decimal(10, 2)
+  
+  precioCliente Decimal     @db.Decimal(12, 2)
+  estado        EstadoFlete @default(PLANEADO)
+  
+  fechaInicio   DateTime?
+  fechaFin      DateTime?
+  
+  notas         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  empresa      Empresa            @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  cotizacion   Cotizacion?        @relation(fields: [cotizacionId], references: [id])
+  cliente      Cliente            @relation(fields: [clienteId], references: [id])
+  camiones     FleteCamion[]
+  choferes     FleteChofer[]
+  gastos       Gasto[]
+
+  @@map("fletes")
+}
+
+enum EstadoFlete {
+  PLANEADO
+  EN_CURSO
+  COMPLETADO
+  CERRADO
+  CANCELADO
+}
+
+// ==================== CAMIONES ====================
+
+model Camion {
+  id              Int      @id @default(autoincrement())
+  empresaId       Int
+  placas          String
+  numeroEconomico String?
+  marca           String?
+  modelo          String?
+  anio            Int?
+  tipo            TipoCamion
+  rendimientoKmL  Decimal  @db.Decimal(5, 2) // km por litro
+  capacidadCarga  Decimal? @db.Decimal(10, 2) // toneladas
+  activo          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  empresa Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  fletes  FleteCamion[]
+  gastos  Gasto[]
+
+  @@unique([empresaId, placas])
+  @@map("camiones")
+}
+
+enum TipoCamion {
+  TORTON
+  TRAILER
+  RABON
+  CAMIONETA
+  OTRO
+}
+
+// ==================== CHOFERES ====================
+
+model Chofer {
+  id        Int         @id @default(autoincrement())
+  empresaId Int
+  nombre    String
+  telefono  String?
+  licencia  String?
+  tipo      TipoChofer
+  tipoPago  TipoPago
+  tarifa    Decimal     @db.Decimal(10, 2)
+  activo    Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  empresa Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  fletes  FleteChofer[]
+
+  @@map("choferes")
+}
+
+enum TipoChofer {
+  FIJO
+  ROTATIVO
+}
+
+enum TipoPago {
+  POR_DIA
+  POR_VIAJE
+  POR_KM
+}
+
+// ==================== ASIGNACIONES ====================
+
+model FleteCamion {
+  id        Int      @id @default(autoincrement())
+  fleteId   Int
+  camionId  Int
+  principal Boolean  @default(false)
+  notas     String?
+  createdAt DateTime @default(now())
+
+  flete  Flete  @relation(fields: [fleteId], references: [id], onDelete: Cascade)
+  camion Camion @relation(fields: [camionId], references: [id])
+
+  @@unique([fleteId, camionId])
+  @@map("flete_camiones")
+}
+
+model FleteChofer {
+  id               Int      @id @default(autoincrement())
+  fleteId          Int
+  choferId         Int
+  fechaInicio      DateTime
+  fechaFin         DateTime?
+  dias             Int?
+  kmReales         Decimal? @db.Decimal(10, 2)
+  salarioCalculado Decimal? @db.Decimal(12, 2)
+  notas            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  flete  Flete  @relation(fields: [fleteId], references: [id], onDelete: Cascade)
+  chofer Chofer @relation(fields: [choferId], references: [id])
+
+  @@map("flete_choferes")
+}
+
+// ==================== GASTOS ====================
+
+model Gasto {
+  id             Int       @id @default(autoincrement())
+  fleteId        Int
+  camionId       Int?
+  tipo           TipoGasto
+  concepto       String?
+  monto          Decimal   @db.Decimal(12, 2)
+  fecha          DateTime
+  comprobanteUrl String?
+  validado       Boolean   @default(false)
+  validadoPor    Int?
+  validadoAt     DateTime?
+  notas          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  flete  Flete   @relation(fields: [fleteId], references: [id], onDelete: Cascade)
+  camion Camion? @relation(fields: [camionId], references: [id])
+
+  @@map("gastos")
+}
+
+enum TipoGasto {
+  DIESEL
+  CASETAS
+  VIATICOS
+  MANTENIMIENTO
+  MULTA
+  SALARIO
+  PENSION
+  MANIOBRAS
+  OTRO
+}
