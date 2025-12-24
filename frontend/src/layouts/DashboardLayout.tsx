@@ -23,6 +23,7 @@ const navigation = [
   { name: 'Choferes', href: '/choferes', icon: UserGroupIcon },
   { name: 'Clientes', href: '/clientes', icon: UsersIcon },
   { name: 'Reportes', href: '/reportes', icon: ChartBarIcon },
+  { name: 'Usuarios', href: '/usuarios', icon: UsersIcon },
   { name: 'Configuración', href: '/configuracion', icon: Cog6ToothIcon },
 ]
 

@@ -13,7 +13,7 @@ import Register from './pages/auth/Register'
 import Dashboard from './pages/Dashboard'
 import Cotizaciones from './pages/cotizaciones/Cotizaciones'
 import CotizacionDetalle from './pages/cotizaciones/CotizacionDetalle'
-import NuevaCotizacion from './pages/cotizaciones/NuevaCotizacion'
+import NuevaCotizacionMejorada from './pages/cotizaciones/NuevaCotizacionMejorada'
 import Fletes from './pages/fletes/Fletes'
 import FleteDetalle from './pages/fletes/FleteDetalle'
 import Camiones from './pages/camiones/Camiones'
@@ -21,6 +21,7 @@ import Choferes from './pages/choferes/Choferes'
 import Clientes from './pages/clientes/Clientes'
 import Reportes from './pages/reportes/Reportes'
 import Configuracion from './pages/Configuracion'
+import Usuarios from './pages/usuarios/Usuarios'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
@@ -67,7 +68,7 @@ export default function App() {
         
         {/* Cotizaciones */}
         <Route path="/cotizaciones" element={<Cotizaciones />} />
-        <Route path="/cotizaciones/nueva" element={<NuevaCotizacion />} />
+        <Route path="/cotizaciones/nueva" element={<NuevaCotizacionMejorada />} />
         <Route path="/cotizaciones/:id" element={<CotizacionDetalle />} />
         
         {/* Fletes */}
@@ -78,12 +79,13 @@ export default function App() {
         <Route path="/camiones" element={<Camiones />} />
         <Route path="/choferes" element={<Choferes />} />
         <Route path="/clientes" element={<Clientes />} />
-        
+
         {/* Reportes */}
         <Route path="/reportes" element={<Reportes />} />
-        
+
         {/* Configuración */}
         <Route path="/configuracion" element={<Configuracion />} />
+        <Route path="/usuarios" element={<Usuarios />} />
       </Route>
 
       {/* Catch all */}
