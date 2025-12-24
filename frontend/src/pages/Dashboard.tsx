@@ -20,6 +20,10 @@ import {
   Legend,
 } from 'recharts'
 import api from '../lib/api'
+import { exportarDashboardAExcel } from '../lib/excelExport'
+import { DocumentArrowDownIcon } from '@heroicons/react/24/outline'
+import NotificationControl from '../components/NotificationControl'
+import { runAllNotificationChecks } from '../lib/notifications'
 
 interface DashboardData {
   periodo: { mes: number; anio: number }
@@ -65,7 +69,16 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchDashboard()
-  }, [])
+
+    // Verificar notificaciones cada 5 minutos
+    const notificationInterval = setInterval(() => {
+      if (data) {
+        runAllNotificationChecks({ fletes: data.topPerdidas })
+      }
+    }, 5 * 60 * 1000) // 5 minutos
+
+    return () => clearInterval(notificationInterval)
+  }, [data])
 
   const fetchDashboard = async () => {
     try {
@@ -131,9 +144,21 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500">Resumen del mes actual</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-500">Resumen del mes actual</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <NotificationControl />
+          <button
+            onClick={() => exportarDashboardAExcel(data)}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <DocumentArrowDownIcon className="w-5 h-5" />
+            Exportar Excel
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}

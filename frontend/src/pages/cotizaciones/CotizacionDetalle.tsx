@@ -10,6 +10,7 @@ import {
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { generarPDFCotizacion } from '../../lib/pdfGenerator'
+import Breadcrumbs from '../../components/Breadcrumbs'
 
 interface Cotizacion {
   id: number
@@ -189,6 +190,13 @@ export default function CotizacionDetalle() {
 
   return (
     <div className="max-w-5xl mx-auto">
+      <Breadcrumbs
+        items={[
+          { label: 'Cotizaciones', path: '/cotizaciones' },
+          { label: cotizacion.folio },
+        ]}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

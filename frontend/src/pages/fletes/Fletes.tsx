@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline'
+import {
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+} from '@heroicons/react/24/outline'
 import api from '../../lib/api'
+import Pagination from '../../components/Pagination'
+import { exportarFletesAExcel } from '../../lib/excelExport'
+import { DocumentArrowDownIcon } from '@heroicons/react/24/outline'
+import { checkFleteUrgentes, checkFletesPerdida } from '../../lib/notifications'
 
 interface Flete {
   id: number
@@ -24,9 +33,27 @@ export default function Fletes() {
   const [busqueda, setBusqueda] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('TODOS')
 
+  // Paginación
+  const [paginaActual, setPaginaActual] = useState(1)
+  const itemsPorPagina = 10
+
+  // Ordenamiento
+  const [ordenarPor, setOrdenarPor] = useState<'fecha' | 'folio' | 'precio'>('fecha')
+  const [ordenDireccion, setOrdenDireccion] = useState<'asc' | 'desc'>('desc')
+
   useEffect(() => {
     fetchFletes()
-  }, [])
+
+    // Verificar fletes urgentes cada 10 minutos
+    const interval = setInterval(() => {
+      if (fletes.length > 0) {
+        checkFleteUrgentes(fletes)
+        checkFletesPerdida(fletes)
+      }
+    }, 10 * 60 * 1000) // 10 minutos
+
+    return () => clearInterval(interval)
+  }, [fletes])
 
   useEffect(() => {
     aplicarFiltros()
@@ -63,7 +90,38 @@ export default function Fletes() {
       resultado = resultado.filter((flete) => flete.estado === filtroEstado)
     }
 
+    // Ordenamiento
+    resultado.sort((a, b) => {
+      let compareValue = 0
+
+      switch (ordenarPor) {
+        case 'fecha':
+          const fechaA = a.fechaInicio ? new Date(a.fechaInicio).getTime() : 0
+          const fechaB = b.fechaInicio ? new Date(b.fechaInicio).getTime() : 0
+          compareValue = fechaA - fechaB
+          break
+        case 'folio':
+          compareValue = a.folio.localeCompare(b.folio)
+          break
+        case 'precio':
+          compareValue = a.precioCliente - b.precioCliente
+          break
+      }
+
+      return ordenDireccion === 'asc' ? compareValue : -compareValue
+    })
+
     setFilteredFletes(resultado)
+    setPaginaActual(1)
+  }
+
+  const toggleOrden = (campo: 'fecha' | 'folio' | 'precio') => {
+    if (ordenarPor === campo) {
+      setOrdenDireccion(ordenDireccion === 'asc' ? 'desc' : 'asc')
+    } else {
+      setOrdenarPor(campo)
+      setOrdenDireccion('desc')
+    }
   }
 
   const formatMoney = (amount: number) => {
@@ -86,6 +144,12 @@ export default function Fletes() {
     return badges[estado] || 'badge-gray'
   }
 
+  // Paginación
+  const totalPaginas = Math.ceil(filteredFletes.length / itemsPorPagina)
+  const indexInicio = (paginaActual - 1) * itemsPorPagina
+  const indexFin = indexInicio + itemsPorPagina
+  const fletesPaginados = filteredFletes.slice(indexInicio, indexFin)
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -104,6 +168,14 @@ export default function Fletes() {
             {filteredFletes.length} de {fletes.length} fletes
           </p>
         </div>
+        <button
+          onClick={() => exportarFletesAExcel(filteredFletes)}
+          className="btn-secondary flex items-center gap-2"
+          disabled={filteredFletes.length === 0}
+        >
+          <DocumentArrowDownIcon className="w-5 h-5" />
+          Exportar Excel
+        </button>
       </div>
 
       {/* Filtros */}
@@ -148,10 +220,30 @@ export default function Fletes() {
         <table className="table">
           <thead>
             <tr>
-              <th>Folio</th>
+              <th className="cursor-pointer hover:bg-gray-100" onClick={() => toggleOrden('folio')}>
+                <div className="flex items-center gap-1">
+                  Folio
+                  {ordenarPor === 'folio' &&
+                    (ordenDireccion === 'asc' ? (
+                      <ChevronUpIcon className="w-4 h-4" />
+                    ) : (
+                      <ChevronDownIcon className="w-4 h-4" />
+                    ))}
+                </div>
+              </th>
               <th>Cliente</th>
               <th>Ruta</th>
-              <th>Precio</th>
+              <th className="cursor-pointer hover:bg-gray-100" onClick={() => toggleOrden('precio')}>
+                <div className="flex items-center gap-1">
+                  Precio
+                  {ordenarPor === 'precio' &&
+                    (ordenDireccion === 'asc' ? (
+                      <ChevronUpIcon className="w-4 h-4" />
+                    ) : (
+                      <ChevronDownIcon className="w-4 h-4" />
+                    ))}
+                </div>
+              </th>
               <th>Gastos</th>
               <th>Utilidad</th>
               <th>Estado</th>
@@ -159,7 +251,7 @@ export default function Fletes() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredFletes.length === 0 ? (
+            {fletesPaginados.length === 0 ? (
               <tr>
                 <td colSpan={8} className="text-center py-8 text-gray-500">
                   {busqueda || filtroEstado !== 'TODOS'
@@ -168,7 +260,7 @@ export default function Fletes() {
                 </td>
               </tr>
             ) : (
-              filteredFletes.map((flete) => {
+              fletesPaginados.map((flete) => {
                 const totalGastos = flete.gastos.reduce((sum, g) => sum + Number(g.monto), 0)
                 const utilidad = calcularUtilidad(flete)
                 return (
@@ -203,6 +295,15 @@ export default function Fletes() {
           </tbody>
         </table>
       </div>
+
+      {/* Paginación */}
+      <Pagination
+        paginaActual={paginaActual}
+        totalPaginas={totalPaginas}
+        totalItems={filteredFletes.length}
+        itemsPorPagina={itemsPorPagina}
+        onCambiarPagina={setPaginaActual}
+      />
     </div>
   )
 }

@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { PlusIcon, MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline'
+import {
+  PlusIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+} from '@heroicons/react/24/outline'
 import api from '../../lib/api'
+import Pagination from '../../components/Pagination'
+import { exportarCotizacionesAExcel } from '../../lib/excelExport'
+import { DocumentArrowDownIcon } from '@heroicons/react/24/outline'
 
 interface Cotizacion {
   id: number
@@ -24,6 +33,14 @@ export default function Cotizaciones() {
   // Filtros
   const [busqueda, setBusqueda] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('TODAS')
+
+  // Paginación
+  const [paginaActual, setPaginaActual] = useState(1)
+  const itemsPorPagina = 10
+
+  // Ordenamiento
+  const [ordenarPor, setOrdenarPor] = useState<'fecha' | 'folio' | 'precio' | 'margen'>('fecha')
+  const [ordenDireccion, setOrdenDireccion] = useState<'asc' | 'desc'>('desc')
 
   useEffect(() => {
     fetchCotizaciones()
@@ -64,7 +81,39 @@ export default function Cotizaciones() {
       resultado = resultado.filter((cot) => cot.estado === filtroEstado)
     }
 
+    // Ordenamiento
+    resultado.sort((a, b) => {
+      let compareValue = 0
+
+      switch (ordenarPor) {
+        case 'fecha':
+          compareValue = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          break
+        case 'folio':
+          compareValue = a.folio.localeCompare(b.folio)
+          break
+        case 'precio':
+          compareValue = a.precioCotizado - b.precioCotizado
+          break
+        case 'margen':
+          compareValue = a.margenEsperado - b.margenEsperado
+          break
+      }
+
+      return ordenDireccion === 'asc' ? compareValue : -compareValue
+    })
+
     setFilteredCotizaciones(resultado)
+    setPaginaActual(1) // Reset a página 1 cuando cambian filtros
+  }
+
+  const toggleOrden = (campo: 'fecha' | 'folio' | 'precio' | 'margen') => {
+    if (ordenarPor === campo) {
+      setOrdenDireccion(ordenDireccion === 'asc' ? 'desc' : 'asc')
+    } else {
+      setOrdenarPor(campo)
+      setOrdenDireccion('desc')
+    }
   }
 
   const formatMoney = (amount: number) => {
@@ -86,6 +135,12 @@ export default function Cotizaciones() {
     return badges[estado] || 'badge-gray'
   }
 
+  // Paginación
+  const totalPaginas = Math.ceil(filteredCotizaciones.length / itemsPorPagina)
+  const indexInicio = (paginaActual - 1) * itemsPorPagina
+  const indexFin = indexInicio + itemsPorPagina
+  const cotizacionesPaginadas = filteredCotizaciones.slice(indexInicio, indexFin)
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -104,10 +159,20 @@ export default function Cotizaciones() {
             {filteredCotizaciones.length} de {cotizaciones.length} cotizaciones
           </p>
         </div>
-        <Link to="/cotizaciones/nueva" className="btn-primary flex items-center gap-2">
-          <PlusIcon className="w-5 h-5" />
-          Nueva Cotización
-        </Link>
+        <div className="flex gap-3">
+          <button
+            onClick={() => exportarCotizacionesAExcel(filteredCotizaciones)}
+            className="btn-secondary flex items-center gap-2"
+            disabled={filteredCotizaciones.length === 0}
+          >
+            <DocumentArrowDownIcon className="w-5 h-5" />
+            Exportar Excel
+          </button>
+          <Link to="/cotizaciones/nueva" className="btn-primary flex items-center gap-2">
+            <PlusIcon className="w-5 h-5" />
+            Nueva Cotización
+          </Link>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -153,19 +218,71 @@ export default function Cotizaciones() {
         <table className="table">
           <thead>
             <tr>
-              <th>Folio</th>
+              <th
+                className="cursor-pointer hover:bg-gray-100"
+                onClick={() => toggleOrden('folio')}
+              >
+                <div className="flex items-center gap-1">
+                  Folio
+                  {ordenarPor === 'folio' &&
+                    (ordenDireccion === 'asc' ? (
+                      <ChevronUpIcon className="w-4 h-4" />
+                    ) : (
+                      <ChevronDownIcon className="w-4 h-4" />
+                    ))}
+                </div>
+              </th>
               <th>Cliente</th>
               <th>Ruta</th>
-              <th>Precio</th>
+              <th
+                className="cursor-pointer hover:bg-gray-100"
+                onClick={() => toggleOrden('precio')}
+              >
+                <div className="flex items-center gap-1">
+                  Precio
+                  {ordenarPor === 'precio' &&
+                    (ordenDireccion === 'asc' ? (
+                      <ChevronUpIcon className="w-4 h-4" />
+                    ) : (
+                      <ChevronDownIcon className="w-4 h-4" />
+                    ))}
+                </div>
+              </th>
               <th>Utilidad</th>
-              <th>Margen</th>
+              <th
+                className="cursor-pointer hover:bg-gray-100"
+                onClick={() => toggleOrden('margen')}
+              >
+                <div className="flex items-center gap-1">
+                  Margen
+                  {ordenarPor === 'margen' &&
+                    (ordenDireccion === 'asc' ? (
+                      <ChevronUpIcon className="w-4 h-4" />
+                    ) : (
+                      <ChevronDownIcon className="w-4 h-4" />
+                    ))}
+                </div>
+              </th>
               <th>Estado</th>
-              <th>Fecha</th>
+              <th
+                className="cursor-pointer hover:bg-gray-100"
+                onClick={() => toggleOrden('fecha')}
+              >
+                <div className="flex items-center gap-1">
+                  Fecha
+                  {ordenarPor === 'fecha' &&
+                    (ordenDireccion === 'asc' ? (
+                      <ChevronUpIcon className="w-4 h-4" />
+                    ) : (
+                      <ChevronDownIcon className="w-4 h-4" />
+                    ))}
+                </div>
+              </th>
               <th></th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredCotizaciones.length === 0 ? (
+            {cotizacionesPaginadas.length === 0 ? (
               <tr>
                 <td colSpan={9} className="text-center py-8 text-gray-500">
                   {busqueda || filtroEstado !== 'TODAS'
@@ -174,7 +291,7 @@ export default function Cotizaciones() {
                 </td>
               </tr>
             ) : (
-              filteredCotizaciones.map((cotizacion) => (
+              cotizacionesPaginadas.map((cotizacion) => (
                 <tr key={cotizacion.id}>
                   <td className="font-medium">{cotizacion.folio}</td>
                   <td>{cotizacion.cliente.nombre}</td>
@@ -212,6 +329,15 @@ export default function Cotizaciones() {
           </tbody>
         </table>
       </div>
+
+      {/* Paginación */}
+      <Pagination
+        paginaActual={paginaActual}
+        totalPaginas={totalPaginas}
+        totalItems={filteredCotizaciones.length}
+        itemsPorPagina={itemsPorPagina}
+        onCambiarPagina={setPaginaActual}
+      />
     </div>
   )
 }
