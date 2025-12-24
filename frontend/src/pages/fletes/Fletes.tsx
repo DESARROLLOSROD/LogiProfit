@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline'
 import api from '../../lib/api'
 
 interface Flete {
@@ -16,23 +17,53 @@ interface Flete {
 
 export default function Fletes() {
   const [fletes, setFletes] = useState<Flete[]>([])
+  const [filteredFletes, setFilteredFletes] = useState<Flete[]>([])
   const [loading, setLoading] = useState(true)
-  const [filtroEstado, setFiltroEstado] = useState('')
+
+  // Filtros
+  const [busqueda, setBusqueda] = useState('')
+  const [filtroEstado, setFiltroEstado] = useState('TODOS')
 
   useEffect(() => {
     fetchFletes()
-  }, [filtroEstado])
+  }, [])
+
+  useEffect(() => {
+    aplicarFiltros()
+  }, [fletes, busqueda, filtroEstado])
 
   const fetchFletes = async () => {
     try {
-      const params = filtroEstado ? `?estado=${filtroEstado}` : ''
-      const response = await api.get(`/fletes${params}`)
+      const response = await api.get('/fletes')
       setFletes(response.data)
     } catch (error) {
       console.error('Error:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const aplicarFiltros = () => {
+    let resultado = [...fletes]
+
+    // Filtro por búsqueda
+    if (busqueda) {
+      const termino = busqueda.toLowerCase()
+      resultado = resultado.filter(
+        (flete) =>
+          flete.folio.toLowerCase().includes(termino) ||
+          flete.cliente.nombre.toLowerCase().includes(termino) ||
+          flete.origen.toLowerCase().includes(termino) ||
+          flete.destino.toLowerCase().includes(termino)
+      )
+    }
+
+    // Filtro por estado
+    if (filtroEstado !== 'TODOS') {
+      resultado = resultado.filter((flete) => flete.estado === filtroEstado)
+    }
+
+    setFilteredFletes(resultado)
   }
 
   const formatMoney = (amount: number) => {
@@ -65,24 +96,54 @@ export default function Fletes() {
 
   return (
     <div>
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Fletes</h1>
-          <p className="text-gray-500">Gestiona tus viajes y controla la rentabilidad</p>
+          <p className="text-gray-500">
+            {filteredFletes.length} de {fletes.length} fletes
+          </p>
         </div>
-        <select
-          value={filtroEstado}
-          onChange={(e) => setFiltroEstado(e.target.value)}
-          className="input w-48"
-        >
-          <option value="">Todos los estados</option>
-          <option value="PLANEADO">Planeado</option>
-          <option value="EN_CURSO">En Curso</option>
-          <option value="COMPLETADO">Completado</option>
-          <option value="CERRADO">Cerrado</option>
-        </select>
       </div>
 
+      {/* Filtros */}
+      <div className="card mb-6">
+        <div className="flex gap-4 items-end">
+          <div className="flex-1">
+            <label className="label flex items-center gap-2">
+              <MagnifyingGlassIcon className="w-4 h-4 text-gray-500" />
+              Buscar
+            </label>
+            <input
+              type="text"
+              className="input"
+              placeholder="Buscar por folio, cliente, origen o destino..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+            />
+          </div>
+          <div className="w-64">
+            <label className="label flex items-center gap-2">
+              <FunnelIcon className="w-4 h-4 text-gray-500" />
+              Estado
+            </label>
+            <select
+              className="input"
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+            >
+              <option value="TODOS">Todos</option>
+              <option value="PLANEADO">Planeado</option>
+              <option value="EN_CURSO">En Curso</option>
+              <option value="COMPLETADO">Completado</option>
+              <option value="CERRADO">Cerrado</option>
+              <option value="CANCELADO">Cancelado</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabla */}
       <div className="table-container">
         <table className="table">
           <thead>
@@ -98,10 +159,19 @@ export default function Fletes() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {fletes.map((flete) => {
-              const totalGastos = flete.gastos.reduce((sum, g) => sum + Number(g.monto), 0)
-              const utilidad = calcularUtilidad(flete)
-              return (
+            {filteredFletes.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="text-center py-8 text-gray-500">
+                  {busqueda || filtroEstado !== 'TODOS'
+                    ? 'No se encontraron fletes con los filtros aplicados'
+                    : 'No hay fletes registrados'}
+                </td>
+              </tr>
+            ) : (
+              filteredFletes.map((flete) => {
+                const totalGastos = flete.gastos.reduce((sum, g) => sum + Number(g.monto), 0)
+                const utilidad = calcularUtilidad(flete)
+                return (
                 <tr key={flete.id}>
                   <td className="font-medium">{flete.folio}</td>
                   <td>{flete.cliente.nombre}</td>
@@ -127,14 +197,8 @@ export default function Fletes() {
                     </Link>
                   </td>
                 </tr>
-              )
-            })}
-            {fletes.length === 0 && (
-              <tr>
-                <td colSpan={8} className="text-center py-8 text-gray-500">
-                  No hay fletes. Crea uno desde una <Link to="/cotizaciones" className="text-primary-600 hover:underline">cotización</Link>
-                </td>
-              </tr>
+                )
+              })
             )}
           </tbody>
         </table>

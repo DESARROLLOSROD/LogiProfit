@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { PlusIcon, PencilIcon, TruckIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
+import { validations, mensajesError, formatters } from '../../lib/validations'
 
 interface Camion {
   id: number
@@ -82,8 +83,27 @@ export default function Camiones() {
   }
 
   const handleSubmit = async () => {
+    // Validaciones
     if (!form.placas) {
-      toast.error('Las placas son obligatorias')
+      toast.error(mensajesError.requerido)
+      return
+    }
+
+    if (!validations.placas(form.placas)) {
+      toast.error(mensajesError.placas)
+      return
+    }
+
+    const rendCargado = Number(form.rendimientoKmLCargado)
+    const rendVacio = Number(form.rendimientoKmLVacio)
+
+    if (!validations.positivo(rendCargado) || !validations.positivo(rendVacio)) {
+      toast.error('El rendimiento debe ser mayor a 0')
+      return
+    }
+
+    if (rendCargado > rendVacio) {
+      toast.error('El rendimiento cargado debe ser menor que el rendimiento vacío')
       return
     }
 
@@ -220,7 +240,7 @@ export default function Camiones() {
                     className="input"
                     placeholder="ABC-123-D"
                     value={form.placas}
-                    onChange={(e) => setForm({ ...form, placas: e.target.value.toUpperCase() })}
+                    onChange={(e) => setForm({ ...form, placas: formatters.placas(e.target.value) })}
                   />
                 </div>
                 <div>

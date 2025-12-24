@@ -7,7 +7,18 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
 } from '@heroicons/react/24/outline'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts'
 import api from '../lib/api'
 
 interface DashboardData {
@@ -21,6 +32,14 @@ interface DashboardData {
     fletesActivos: number
     fletesConPerdida: number
   }
+  tendenciaMensual: Array<{
+    mes: number
+    anio: number
+    ingresos: number
+    gastos: number
+    utilidad: number
+    margen: number
+  }>
   topRentables: Array<{
     id: number
     folio: string
@@ -30,6 +49,13 @@ interface DashboardData {
     id: number
     folio: string
     utilidad: number
+  }>
+  topClientes: Array<{
+    id: number
+    nombre: string
+    utilidad: number
+    margen: number
+    cantidadFletes: number
   }>
 }
 
@@ -81,6 +107,28 @@ export default function Dashboard() {
     { name: 'Utilidad', valor: data.resumen.utilidadMes, fill: '#3b82f6' },
   ]
 
+  const mesesNombres = [
+    'Ene',
+    'Feb',
+    'Mar',
+    'Abr',
+    'May',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dic',
+  ]
+
+  const tendenciaChartData = data.tendenciaMensual.map((item) => ({
+    mes: `${mesesNombres[item.mes - 1]} ${item.anio}`,
+    Ingresos: item.ingresos,
+    Gastos: item.gastos,
+    Utilidad: item.utilidad,
+  }))
+
   return (
     <div>
       <div className="mb-6">
@@ -117,13 +165,44 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* Tendencia Mensual - 6 meses */}
+      <div className="card mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Tendencia de Rentabilidad (Últimos 6 Meses)
+        </h3>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={tendenciaChartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="mes" />
+              <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
+              <Tooltip formatter={(value: number) => formatMoney(value)} />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="Ingresos"
+                stroke="#10b981"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+              />
+              <Line type="monotone" dataKey="Gastos" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} />
+              <Line
+                type="monotone"
+                dataKey="Utilidad"
+                stroke="#3b82f6"
+                strokeWidth={3}
+                dot={{ r: 5 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
       {/* Charts and Lists */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart */}
-        <div className="lg:col-span-2 card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Resumen Financiero del Mes
-          </h3>
+        <div className="card">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumen del Mes Actual</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
@@ -137,10 +216,37 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Top Clientes */}
+        <div className="card">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Top Clientes Rentables (3 meses)
+          </h3>
+          {data.topClientes.length > 0 ? (
+            <ul className="space-y-3">
+              {data.topClientes.map((cliente) => (
+                <li key={cliente.id} className="p-3 rounded-lg bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900 text-sm">{cliente.nombre}</span>
+                    <span className="text-green-600 font-semibold text-sm">
+                      {formatMoney(cliente.utilidad)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-xs text-gray-500">{cliente.cantidadFletes} fletes</span>
+                    <span className="text-xs text-gray-600">{cliente.margen.toFixed(1)}% margen</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500 text-sm">No hay datos disponibles</p>
+          )}
+        </div>
+
         {/* Top Rentables */}
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Fletes Más Rentables
+            Fletes Más Rentables (Mes Actual)
           </h3>
           {data.topRentables.length > 0 ? (
             <ul className="space-y-3">

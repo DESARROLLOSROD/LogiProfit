@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { PlusIcon, PencilIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
+import { validations, mensajesError, formatters } from '../../lib/validations'
 
 interface Cliente {
   id: number
@@ -66,8 +67,24 @@ export default function Clientes() {
   }
 
   const handleSubmit = async () => {
+    // Validaciones
     if (!form.nombre) {
-      toast.error('El nombre es obligatorio')
+      toast.error(mensajesError.requerido)
+      return
+    }
+
+    if (form.rfc && !validations.rfc(form.rfc)) {
+      toast.error(mensajesError.rfc)
+      return
+    }
+
+    if (form.email && !validations.email(form.email)) {
+      toast.error(mensajesError.email)
+      return
+    }
+
+    if (form.telefono && !validations.telefono(form.telefono)) {
+      toast.error(mensajesError.telefono)
       return
     }
 
@@ -200,9 +217,9 @@ export default function Clientes() {
                   <label className="label">RFC</label>
                   <input
                     className="input"
-                    placeholder="TDN123456ABC"
+                    placeholder="ABC123456XYZ"
                     value={form.rfc}
-                    onChange={(e) => setForm({ ...form, rfc: e.target.value.toUpperCase() })}
+                    onChange={(e) => setForm({ ...form, rfc: formatters.rfc(e.target.value) })}
                     maxLength={13}
                   />
                 </div>
@@ -213,7 +230,8 @@ export default function Clientes() {
                     className="input"
                     placeholder="3312345678"
                     value={form.telefono}
-                    onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+                    onChange={(e) => setForm({ ...form, telefono: formatters.telefono(e.target.value) })}
+                    maxLength={10}
                   />
                 </div>
               </div>

@@ -12,6 +12,39 @@ export class ReportesService {
     const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
     const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
 
+    // Obtener últimos 6 meses para tendencia
+    const mesesAtras = 6;
+    const tendenciaMensual = [];
+
+    for (let i = mesesAtras - 1; i >= 0; i--) {
+      const inicioMesTendencia = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+      const finMesTendencia = new Date(hoy.getFullYear(), hoy.getMonth() - i + 1, 0);
+
+      const fletesMes = await this.prisma.flete.findMany({
+        where: {
+          empresaId,
+          createdAt: { gte: inicioMesTendencia, lte: finMesTendencia },
+        },
+        include: { gastos: true },
+      });
+
+      const ingresos = fletesMes.reduce((sum, f) => sum + Number(f.precioCliente), 0);
+      const gastos = fletesMes.reduce(
+        (sum, f) => sum + f.gastos.reduce((s, g) => s + Number(g.monto), 0),
+        0
+      );
+      const utilidad = ingresos - gastos;
+
+      tendenciaMensual.push({
+        mes: inicioMesTendencia.getMonth() + 1,
+        anio: inicioMesTendencia.getFullYear(),
+        ingresos,
+        gastos,
+        utilidad,
+        margen: ingresos > 0 ? (utilidad / ingresos) * 100 : 0,
+      });
+    }
+
     // Fletes del mes
     const fletesDelMes = await this.prisma.flete.findMany({
       where: {
@@ -73,6 +106,50 @@ export class ReportesService {
       .sort((a, b) => a.utilidad - b.utilidad)
       .slice(0, 5);
 
+    // Top 5 clientes más rentables (últimos 3 meses)
+    const inicioTrimestre = new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1);
+    const fletesRecentesConCliente = await this.prisma.flete.findMany({
+      where: {
+        empresaId,
+        createdAt: { gte: inicioTrimestre },
+      },
+      include: {
+        cliente: true,
+        gastos: true,
+      },
+    });
+
+    const clientesMap = fletesRecentesConCliente.reduce((acc, flete) => {
+      const clienteId = flete.clienteId;
+      if (!acc[clienteId]) {
+        acc[clienteId] = {
+          id: flete.cliente.id,
+          nombre: flete.cliente.nombre,
+          ingresos: 0,
+          gastos: 0,
+          utilidad: 0,
+          cantidadFletes: 0,
+        };
+      }
+      const gastos = flete.gastos.reduce((sum, g) => sum + Number(g.monto), 0);
+      acc[clienteId].ingresos += Number(flete.precioCliente);
+      acc[clienteId].gastos += gastos;
+      acc[clienteId].utilidad += Number(flete.precioCliente) - gastos;
+      acc[clienteId].cantidadFletes += 1;
+      return acc;
+    }, {} as Record<number, any>);
+
+    const topClientes = Object.values(clientesMap)
+      .map((c: any) => ({
+        id: c.id,
+        nombre: c.nombre,
+        utilidad: c.utilidad,
+        margen: c.ingresos > 0 ? (c.utilidad / c.ingresos) * 100 : 0,
+        cantidadFletes: c.cantidadFletes,
+      }))
+      .sort((a, b) => b.utilidad - a.utilidad)
+      .slice(0, 5);
+
     return {
       periodo: {
         mes: hoy.getMonth() + 1,
@@ -87,8 +164,10 @@ export class ReportesService {
         fletesActivos,
         fletesConPerdida,
       },
+      tendenciaMensual,
       topRentables: fletesRentables,
       topPerdidas: fletesConPerdidaLista,
+      topClientes,
     };
   }
 

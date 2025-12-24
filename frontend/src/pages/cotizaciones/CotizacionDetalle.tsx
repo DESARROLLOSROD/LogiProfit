@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
+import { generarPDFCotizacion } from '../../lib/pdfGenerator'
 
 interface Cotizacion {
   id: number
@@ -144,6 +145,38 @@ export default function CotizacionDetalle() {
     setShowDetails(prev => ({ ...prev, [section]: !prev[section] }))
   }
 
+  const exportarPDF = () => {
+    if (!cotizacion) return
+
+    generarPDFCotizacion({
+      folio: cotizacion.folio,
+      cliente: {
+        nombre: cotizacion.cliente.nombre,
+        rfc: undefined, // El backend no devuelve RFC del cliente en el detalle
+        email: undefined,
+      },
+      origen: cotizacion.origen,
+      destino: cotizacion.destino,
+      kmIda: cotizacion.kmCargado,
+      kmVuelta: cotizacion.kmVacio || 0,
+      precioCotizado: cotizacion.precioCotizado,
+      utilidadEsperada: cotizacion.utilidadEsperada,
+      margenEsperado: cotizacion.margenEsperado,
+      createdAt: cotizacion.createdAt,
+      costoDieselIda: cotizacion.costoDieselCargado,
+      costoDieselVuelta: cotizacion.costoDieselVacio,
+      costoCasetas: cotizacion.costoCasetasTotal,
+      costoViaticos: cotizacion.costoViaticosTotal,
+      costoMantenimiento: cotizacion.costoMantenimiento,
+      costosIndirectos: cotizacion.costoIndirectos,
+      costoAutoPiloto: cotizacion.costoCarroPilotoTotal,
+      costoTotal: cotizacion.costoTotal,
+      requiereAutoPiloto: cotizacion.requiereCarroPiloto,
+    })
+
+    toast.success('PDF generado exitosamente')
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -175,7 +208,7 @@ export default function CotizacionDetalle() {
               )}
             </>
           )}
-          <button className="btn-secondary">
+          <button onClick={exportarPDF} className="btn-secondary">
             Exportar PDF
           </button>
         </div>

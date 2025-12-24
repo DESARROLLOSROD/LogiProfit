@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { PlusIcon } from '@heroicons/react/24/outline'
+import { PlusIcon, MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline'
 import api from '../../lib/api'
 
 interface Cotizacion {
@@ -18,11 +18,20 @@ interface Cotizacion {
 
 export default function Cotizaciones() {
   const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([])
+  const [filteredCotizaciones, setFilteredCotizaciones] = useState<Cotizacion[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Filtros
+  const [busqueda, setBusqueda] = useState('')
+  const [filtroEstado, setFiltroEstado] = useState('TODAS')
 
   useEffect(() => {
     fetchCotizaciones()
   }, [])
+
+  useEffect(() => {
+    aplicarFiltros()
+  }, [cotizaciones, busqueda, filtroEstado])
 
   const fetchCotizaciones = async () => {
     try {
@@ -33,6 +42,29 @@ export default function Cotizaciones() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const aplicarFiltros = () => {
+    let resultado = [...cotizaciones]
+
+    // Filtro por búsqueda (folio o cliente)
+    if (busqueda) {
+      const termino = busqueda.toLowerCase()
+      resultado = resultado.filter(
+        (cot) =>
+          cot.folio.toLowerCase().includes(termino) ||
+          cot.cliente.nombre.toLowerCase().includes(termino) ||
+          cot.origen.toLowerCase().includes(termino) ||
+          cot.destino.toLowerCase().includes(termino)
+      )
+    }
+
+    // Filtro por estado
+    if (filtroEstado !== 'TODAS') {
+      resultado = resultado.filter((cot) => cot.estado === filtroEstado)
+    }
+
+    setFilteredCotizaciones(resultado)
   }
 
   const formatMoney = (amount: number) => {
@@ -64,10 +96,13 @@ export default function Cotizaciones() {
 
   return (
     <div>
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Cotizaciones</h1>
-          <p className="text-gray-500">Gestiona tus cotizaciones y simula costos</p>
+          <p className="text-gray-500">
+            {filteredCotizaciones.length} de {cotizaciones.length} cotizaciones
+          </p>
         </div>
         <Link to="/cotizaciones/nueva" className="btn-primary flex items-center gap-2">
           <PlusIcon className="w-5 h-5" />
@@ -75,6 +110,45 @@ export default function Cotizaciones() {
         </Link>
       </div>
 
+      {/* Filtros */}
+      <div className="card mb-6">
+        <div className="flex gap-4 items-end">
+          <div className="flex-1">
+            <label className="label flex items-center gap-2">
+              <MagnifyingGlassIcon className="w-4 h-4 text-gray-500" />
+              Buscar
+            </label>
+            <input
+              type="text"
+              className="input"
+              placeholder="Buscar por folio, cliente, origen o destino..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+            />
+          </div>
+          <div className="w-64">
+            <label className="label flex items-center gap-2">
+              <FunnelIcon className="w-4 h-4 text-gray-500" />
+              Estado
+            </label>
+            <select
+              className="input"
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+            >
+              <option value="TODAS">Todas</option>
+              <option value="BORRADOR">Borrador</option>
+              <option value="ENVIADA">Enviada</option>
+              <option value="APROBADA">Aprobada</option>
+              <option value="RECHAZADA">Rechazada</option>
+              <option value="CONVERTIDA">Convertida</option>
+              <option value="CANCELADA">Cancelada</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabla */}
       <div className="table-container">
         <table className="table">
           <thead>
@@ -83,46 +157,57 @@ export default function Cotizaciones() {
               <th>Cliente</th>
               <th>Ruta</th>
               <th>Precio</th>
-              <th>Utilidad Esperada</th>
+              <th>Utilidad</th>
               <th>Margen</th>
               <th>Estado</th>
+              <th>Fecha</th>
               <th></th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {cotizaciones.map((cot) => (
-              <tr key={cot.id}>
-                <td className="font-medium">{cot.folio}</td>
-                <td>{cot.cliente.nombre}</td>
-                <td className="text-sm text-gray-500">
-                  {cot.origen} → {cot.destino}
-                </td>
-                <td>{formatMoney(cot.precioCotizado)}</td>
-                <td className={cot.utilidadEsperada >= 0 ? 'text-green-600' : 'text-red-600'}>
-                  {formatMoney(cot.utilidadEsperada)}
-                </td>
-                <td>{(Number(cot.margenEsperado) || 0).toFixed(1)}%</td>
-                <td>
-                  <span className={`badge ${getEstadoBadge(cot.estado)}`}>
-                    {cot.estado}
-                  </span>
-                </td>
-                <td>
-                  <Link
-                    to={`/cotizaciones/${cot.id}`}
-                    className="text-primary-600 hover:underline text-sm"
-                  >
-                    Ver detalle
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {cotizaciones.length === 0 && (
+            {filteredCotizaciones.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-8 text-gray-500">
-                  No hay cotizaciones. <Link to="/cotizaciones/nueva" className="text-primary-600 hover:underline">Crea una nueva</Link>
+                <td colSpan={9} className="text-center py-8 text-gray-500">
+                  {busqueda || filtroEstado !== 'TODAS'
+                    ? 'No se encontraron cotizaciones con los filtros aplicados'
+                    : 'No hay cotizaciones registradas'}
                 </td>
               </tr>
+            ) : (
+              filteredCotizaciones.map((cotizacion) => (
+                <tr key={cotizacion.id}>
+                  <td className="font-medium">{cotizacion.folio}</td>
+                  <td>{cotizacion.cliente.nombre}</td>
+                  <td className="text-sm text-gray-600">
+                    {cotizacion.origen} → {cotizacion.destino}
+                  </td>
+                  <td>{formatMoney(cotizacion.precioCotizado)}</td>
+                  <td
+                    className={
+                      cotizacion.utilidadEsperada >= 0 ? 'text-green-600' : 'text-red-600'
+                    }
+                  >
+                    {formatMoney(cotizacion.utilidadEsperada)}
+                  </td>
+                  <td>{cotizacion.margenEsperado.toFixed(1)}%</td>
+                  <td>
+                    <span className={`badge ${getEstadoBadge(cotizacion.estado)}`}>
+                      {cotizacion.estado}
+                    </span>
+                  </td>
+                  <td className="text-sm text-gray-500">
+                    {new Date(cotizacion.createdAt).toLocaleDateString('es-MX')}
+                  </td>
+                  <td>
+                    <Link
+                      to={`/cotizaciones/${cotizacion.id}`}
+                      className="text-primary-600 hover:underline text-sm"
+                    >
+                      Ver
+                    </Link>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
