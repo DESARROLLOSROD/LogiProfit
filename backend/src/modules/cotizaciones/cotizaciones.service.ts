@@ -1,19 +1,32 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateCotizacionDto } from './dto/create-cotizacion.dto';
-import { UpdateCotizacionDto } from './dto/update-cotizacion.dto';
-import { SimularCostosDto } from './dto/simular-costos.dto';
+import { CreateCotizacionDto, UpdateCotizacionDto, SimularCostosDto } from './dto/cotizacion.dto';
 import { EstadoCotizacion } from '@prisma/client';
 
 @Injectable()
 export class CotizacionesService {
   constructor(private prisma: PrismaService) {}
 
-  // Parámetros de costos por defecto (pueden ser configurables por empresa)
-  private readonly COSTO_DIESEL_LITRO = 23.5; // MXN
-  private readonly COSTO_CASETA_KM = 5.5; // MXN promedio
-  private readonly VIATICOS_DIARIOS = 500; // MXN
-  private readonly KM_POR_DIA = 400; // Promedio
+  // Parámetros de costos por defecto (basados en metodología real)
+  private readonly COSTO_DIESEL_LITRO = 24.0; // MXN (actualizado)
+  private readonly COSTO_CASETA_KM = 5.5; // MXN promedio (fallback si no se especifica)
+  private readonly KM_POR_DIA = 400; // Promedio para calcular días
+
+  // Defaults para viáticos detallados
+  private readonly COSTO_COMIDA_DEFAULT = 120; // MXN
+  private readonly COSTO_FEDERAL_DEFAULT = 100; // MXN
+  private readonly COSTO_TELEFONO_DEFAULT = 100; // MXN
+  private readonly IMPREVISTOS_VIATICOS_DEFAULT = 500; // MXN
+
+  // Defaults para carro piloto
+  private readonly COSTO_BASE_CARRO_PILOTO = 5000; // MXN
+  private readonly COSTO_GASOLINA_CARRO_PILOTO_DIA = 4500; // MXN por día
+  private readonly COSTO_CASETAS_CARRO_PILOTO_DIA = 2000; // MXN por día
+  private readonly COSTO_ALIMENTACION_CARRO_PILOTO = 240; // MXN por día (21 comidas / día)
+
+  // Porcentajes por defecto
+  private readonly PORCENTAJE_MANTENIMIENTO = 25; // %
+  private readonly PORCENTAJE_INDIRECTOS = 20; // %
 
   private async generarFolio(empresaId: number): Promise<string> {
     const count = await this.prisma.cotizacion.count({
@@ -24,28 +37,60 @@ export class CotizacionesService {
   }
 
   async simularCostos(empresaId: number, dto: SimularCostosDto) {
-    // Obtener rendimiento del camión si se especifica
-    let rendimiento = 3.5; // Default: 3.5 km/litro
-    
+    const kmCargado = dto.kmCargado || 0;
+    const kmVacio = dto.kmVacio || 0;
+    const kmTotal = kmCargado + kmVacio;
+
+    // ============= OBTENER RENDIMIENTO DEL CAMIÓN =============
+    let rendimientoCargado = 2.5; // Default km/L
+    let rendimientoVacio = 3.0; // Default km/L
+
     if (dto.camionId) {
       const camion = await this.prisma.camion.findFirst({
         where: { id: dto.camionId, empresaId },
       });
       if (camion) {
-        rendimiento = Number(camion.rendimientoKmL);
+        rendimientoCargado = Number(camion.rendimientoKmLCargado);
+        rendimientoVacio = Number(camion.rendimientoKmLVacio);
       }
     }
 
-    // Cálculos de costos estimados
-    const litrosNecesarios = dto.kmEstimados / rendimiento;
-    const dieselEstimado = litrosNecesarios * this.COSTO_DIESEL_LITRO;
-    
-    const casetasEstimado = dto.kmEstimados * this.COSTO_CASETA_KM;
-    
-    const diasViaje = Math.ceil(dto.kmEstimados / this.KM_POR_DIA);
-    const viaticosEstimado = diasViaje * this.VIATICOS_DIARIOS;
-    
-    // Salario estimado basado en chofer o tarifa default
+    // ============= 1. DIESEL =============
+    const litrosCargado = kmCargado / rendimientoCargado;
+    const litrosVacio = kmVacio / rendimientoVacio;
+    const litrosTotales = litrosCargado + litrosVacio;
+    const dieselEstimado = litrosTotales * this.COSTO_DIESEL_LITRO;
+
+    // ============= 2. CASETAS =============
+    let casetasEstimado = 0;
+    if (dto.casetasCargado !== undefined && dto.casetasVacio !== undefined) {
+      // Usar costos reales si se proporcionan
+      casetasEstimado = dto.casetasCargado + dto.casetasVacio;
+    } else {
+      // Fallback: estimación por km
+      casetasEstimado = kmTotal * this.COSTO_CASETA_KM;
+    }
+
+    // ============= 3. VIÁTICOS DETALLADOS =============
+    const diasViaje = Math.ceil(kmTotal / this.KM_POR_DIA);
+
+    const comidasCantidad = dto.comidasCantidad || (diasViaje * 3); // 3 comidas/día
+    const comidasPU = dto.comidasPrecioUnitario || this.COSTO_COMIDA_DEFAULT;
+    const costoComidas = comidasCantidad * comidasPU;
+
+    const federalCantidad = dto.federalCantidad || diasViaje;
+    const federalPU = dto.federalPrecioUnitario || this.COSTO_FEDERAL_DEFAULT;
+    const costoFederal = federalCantidad * federalPU;
+
+    const telefonoCantidad = dto.telefonoCantidad || Math.ceil(diasViaje / 3); // Cada 3 días
+    const telefonoPU = dto.telefonoPrecioUnitario || this.COSTO_TELEFONO_DEFAULT;
+    const costoTelefono = telefonoCantidad * telefonoPU;
+
+    const imprevistosViaticos = dto.imprevistosViaticos || this.IMPREVISTOS_VIATICOS_DEFAULT;
+
+    const viaticosEstimado = costoComidas + costoFederal + costoTelefono + imprevistosViaticos;
+
+    // ============= 4. SALARIO DEL CHOFER =============
     let salarioEstimado = 0;
     if (dto.choferId) {
       const chofer = await this.prisma.chofer.findFirst({
@@ -57,7 +102,7 @@ export class CotizacionesService {
             salarioEstimado = Number(chofer.tarifa) * diasViaje;
             break;
           case 'POR_KM':
-            salarioEstimado = Number(chofer.tarifa) * dto.kmEstimados;
+            salarioEstimado = Number(chofer.tarifa) * kmCargado;
             break;
           case 'POR_VIAJE':
             salarioEstimado = Number(chofer.tarifa);
@@ -69,10 +114,58 @@ export class CotizacionesService {
       salarioEstimado = 600 * diasViaje;
     }
 
-    const totalCostos = dieselEstimado + casetasEstimado + viaticosEstimado + salarioEstimado;
-    const utilidadEsperada = dto.precioCotizado - totalCostos;
-    const margenEsperado = dto.precioCotizado > 0 
-      ? (utilidadEsperada / dto.precioCotizado) * 100 
+    // ============= 5. PERMISO SCT =============
+    const permisoEstimado = dto.permisoEstimado || 0;
+
+    // ============= SUBTOTAL OPERATIVO =============
+    const subtotalOperativo = dieselEstimado + casetasEstimado + viaticosEstimado + salarioEstimado + permisoEstimado;
+
+    // ============= 6. COSTOS PORCENTUALES =============
+    const porcentajeMantenimiento = dto.porcentajeMantenimiento || this.PORCENTAJE_MANTENIMIENTO;
+    const montoMantenimiento = (subtotalOperativo * porcentajeMantenimiento) / 100;
+
+    const porcentajeIndirectos = dto.porcentajeIndirectos || this.PORCENTAJE_INDIRECTOS;
+    const montoIndirectos = (subtotalOperativo * porcentajeIndirectos) / 100;
+
+    // ============= 7. CARRO PILOTO =============
+    let carroPiloto = {
+      requiere: dto.requiereCarroPiloto || false,
+      dias: 0,
+      costoBase: 0,
+      gasolina: 0,
+      casetas: 0,
+      alimentacion: 0,
+      imprevistos: 0,
+      total: 0,
+    };
+
+    if (dto.requiereCarroPiloto) {
+      const diasCP = dto.diasCarroPiloto || diasViaje;
+      const costoBase = dto.costoBaseCarroPiloto || this.COSTO_BASE_CARRO_PILOTO;
+      const gasolina = this.COSTO_GASOLINA_CARRO_PILOTO_DIA * diasCP;
+      const casetas = this.COSTO_CASETAS_CARRO_PILOTO_DIA * diasCP;
+      const alimentacion = this.COSTO_ALIMENTACION_CARRO_PILOTO * diasCP * 3; // 3 comidas/día
+      const imprevistos = 500; // Fijo
+
+      carroPiloto = {
+        requiere: true,
+        dias: diasCP,
+        costoBase,
+        gasolina,
+        casetas,
+        alimentacion,
+        imprevistos,
+        total: costoBase + gasolina + casetas + alimentacion + imprevistos,
+      };
+    }
+
+    // ============= COSTO TOTAL =============
+    const costoTotal = subtotalOperativo + montoMantenimiento + montoIndirectos + carroPiloto.total;
+
+    // ============= UTILIDAD Y MARGEN =============
+    const utilidadEsperada = dto.precioCotizado - costoTotal;
+    const margenEsperado = dto.precioCotizado > 0
+      ? (utilidadEsperada / dto.precioCotizado) * 100
       : 0;
 
     // Nivel de riesgo basado en margen
@@ -85,33 +178,90 @@ export class CotizacionesService {
       nivelRiesgo = 'ALTO';
     }
 
+    // ============= RETORNO CON DESGLOSE COMPLETO =============
     return {
-      kmEstimados: dto.kmEstimados,
+      // Información general
+      kmCargado,
+      kmVacio,
+      kmTotal,
       precioCotizado: dto.precioCotizado,
       diasEstimados: diasViaje,
-      costos: {
-        diesel: Math.round(dieselEstimado * 100) / 100,
-        casetas: Math.round(casetasEstimado * 100) / 100,
-        viaticos: Math.round(viaticosEstimado * 100) / 100,
-        salario: Math.round(salarioEstimado * 100) / 100,
-        total: Math.round(totalCostos * 100) / 100,
+
+      // Desglose de costos operativos
+      diesel: {
+        litrosCargado: Math.round(litrosCargado * 100) / 100,
+        litrosVacio: Math.round(litrosVacio * 100) / 100,
+        litrosTotales: Math.round(litrosTotales * 100) / 100,
+        precioLitro: this.COSTO_DIESEL_LITRO,
+        costo: Math.round(dieselEstimado * 100) / 100,
       },
+
+      casetas: {
+        cargado: dto.casetasCargado || Math.round((kmCargado * this.COSTO_CASETA_KM) * 100) / 100,
+        vacio: dto.casetasVacio || Math.round((kmVacio * this.COSTO_CASETA_KM) * 100) / 100,
+        total: Math.round(casetasEstimado * 100) / 100,
+      },
+
+      viaticos: {
+        comidas: { cantidad: comidasCantidad, precioUnitario: comidasPU, total: Math.round(costoComidas * 100) / 100 },
+        federal: { cantidad: federalCantidad, precioUnitario: federalPU, total: Math.round(costoFederal * 100) / 100 },
+        telefono: { cantidad: telefonoCantidad, precioUnitario: telefonoPU, total: Math.round(costoTelefono * 100) / 100 },
+        imprevistos: Math.round(imprevistosViaticos * 100) / 100,
+        total: Math.round(viaticosEstimado * 100) / 100,
+      },
+
+      salario: Math.round(salarioEstimado * 100) / 100,
+      permiso: Math.round(permisoEstimado * 100) / 100,
+
+      subtotalOperativo: Math.round(subtotalOperativo * 100) / 100,
+
+      // Costos porcentuales
+      mantenimiento: {
+        porcentaje: porcentajeMantenimiento,
+        monto: Math.round(montoMantenimiento * 100) / 100,
+      },
+      indirectos: {
+        porcentaje: porcentajeIndirectos,
+        monto: Math.round(montoIndirectos * 100) / 100,
+      },
+
+      // Carro piloto
+      carroPiloto: {
+        requiere: carroPiloto.requiere,
+        dias: carroPiloto.dias,
+        costoBase: Math.round(carroPiloto.costoBase * 100) / 100,
+        gasolina: Math.round(carroPiloto.gasolina * 100) / 100,
+        casetas: Math.round(carroPiloto.casetas * 100) / 100,
+        alimentacion: Math.round(carroPiloto.alimentacion * 100) / 100,
+        imprevistos: Math.round(carroPiloto.imprevistos * 100) / 100,
+        total: Math.round(carroPiloto.total * 100) / 100,
+      },
+
+      // Totales
+      costoTotal: Math.round(costoTotal * 100) / 100,
       utilidadEsperada: Math.round(utilidadEsperada * 100) / 100,
       margenEsperado: Math.round(margenEsperado * 100) / 100,
       nivelRiesgo,
+
+      // Desglose porcentual
+      desglosePorcentual: {
+        diesel: Math.round((dieselEstimado / costoTotal) * 10000) / 100,
+        casetas: Math.round((casetasEstimado / costoTotal) * 10000) / 100,
+        viaticos: Math.round((viaticosEstimado / costoTotal) * 10000) / 100,
+        salario: Math.round((salarioEstimado / costoTotal) * 10000) / 100,
+        permiso: Math.round((permisoEstimado / costoTotal) * 10000) / 100,
+        mantenimiento: Math.round((montoMantenimiento / costoTotal) * 10000) / 100,
+        indirectos: Math.round((montoIndirectos / costoTotal) * 10000) / 100,
+        carroPiloto: Math.round((carroPiloto.total / costoTotal) * 10000) / 100,
+      },
     };
   }
 
   async create(empresaId: number, dto: CreateCotizacionDto) {
     const folio = await this.generarFolio(empresaId);
 
-    // Simular costos para guardar
-    const simulacion = await this.simularCostos(empresaId, {
-      kmEstimados: dto.kmEstimados,
-      precioCotizado: dto.precioCotizado,
-      camionId: dto.camionId,
-      choferId: dto.choferId,
-    });
+    // Simular costos para guardar con todos los campos
+    const simulacion = await this.simularCostos(empresaId, dto);
 
     return this.prisma.cotizacion.create({
       data: {
@@ -120,14 +270,60 @@ export class CotizacionesService {
         folio,
         origen: dto.origen,
         destino: dto.destino,
-        kmEstimados: dto.kmEstimados,
+
+        // Información de carga
+        tipoCarga: dto.tipoCarga,
+        pesoCarga: dto.pesoCarga,
+        dimensiones: dto.dimensiones,
+
+        // Kilometraje
+        kmCargado: simulacion.kmCargado,
+        kmVacio: simulacion.kmVacio,
+        kmTotal: simulacion.kmTotal,
+
         precioCotizado: dto.precioCotizado,
-        dieselEstimado: simulacion.costos.diesel,
-        casetasEstimado: simulacion.costos.casetas,
-        viaticosEstimado: simulacion.costos.viaticos,
-        salarioEstimado: simulacion.costos.salario,
+
+        // Costos operativos directos
+        dieselEstimado: simulacion.diesel.costo,
+        casetasEstimado: simulacion.casetas.total,
+        viaticosEstimado: simulacion.viaticos.total,
+        salarioEstimado: simulacion.salario,
+        permisoEstimado: simulacion.permiso,
+
+        // Costos porcentuales
+        porcentajeMantenimiento: simulacion.mantenimiento.porcentaje,
+        montoMantenimiento: simulacion.mantenimiento.monto,
+        porcentajeIndirectos: simulacion.indirectos.porcentaje,
+        montoIndirectos: simulacion.indirectos.monto,
+
+        // Carro piloto
+        requiereCarroPiloto: simulacion.carroPiloto.requiere,
+        diasCarroPiloto: simulacion.carroPiloto.dias || null,
+        costoBaseCarroPiloto: simulacion.carroPiloto.costoBase || null,
+        gasolinaCarroPiloto: simulacion.carroPiloto.gasolina || null,
+        casetasCarroPiloto: simulacion.carroPiloto.casetas || null,
+        alimentacionCarroPiloto: simulacion.carroPiloto.alimentacion || null,
+        imprevistosCarroPiloto: simulacion.carroPiloto.imprevistos || null,
+        totalCarroPiloto: simulacion.carroPiloto.total,
+
+        // Viáticos detallados
+        comidasCantidad: simulacion.viaticos.comidas.cantidad,
+        comidasPrecioUnitario: simulacion.viaticos.comidas.precioUnitario,
+        federalCantidad: simulacion.viaticos.federal.cantidad,
+        federalPrecioUnitario: simulacion.viaticos.federal.precioUnitario,
+        telefonoCantidad: simulacion.viaticos.telefono.cantidad,
+        telefonoPrecioUnitario: simulacion.viaticos.telefono.precioUnitario,
+        imprevistosViaticos: simulacion.viaticos.imprevistos,
+
+        // Casetas detalladas
+        casetasCargado: simulacion.casetas.cargado,
+        casetasVacio: simulacion.casetas.vacio,
+
+        // Totales
+        costoTotal: simulacion.costoTotal,
         utilidadEsperada: simulacion.utilidadEsperada,
         margenEsperado: simulacion.margenEsperado,
+
         notas: dto.notas,
         validoHasta: dto.validoHasta,
       },
@@ -160,24 +356,30 @@ export class CotizacionesService {
   }
 
   async update(id: number, empresaId: number, dto: UpdateCotizacionDto) {
-    await this.findOne(id, empresaId);
+    const cotizacionActual = await this.findOne(id, empresaId);
 
     // Si cambian km o precio, recalcular costos
-    if (dto.kmEstimados || dto.precioCotizado) {
-      const cotizacionActual = await this.findOne(id, empresaId);
+    if (dto.kmCargado !== undefined || dto.kmVacio !== undefined || dto.precioCotizado !== undefined) {
       const simulacion = await this.simularCostos(empresaId, {
-        kmEstimados: dto.kmEstimados || Number(cotizacionActual.kmEstimados),
-        precioCotizado: dto.precioCotizado || Number(cotizacionActual.precioCotizado),
+        kmCargado: dto.kmCargado ?? Number(cotizacionActual.kmCargado),
+        kmVacio: dto.kmVacio ?? Number(cotizacionActual.kmVacio),
+        precioCotizado: dto.precioCotizado ?? Number(cotizacionActual.precioCotizado),
+        requiereCarroPiloto: dto.requiereCarroPiloto ?? cotizacionActual.requiereCarroPiloto,
+        porcentajeMantenimiento: dto.porcentajeMantenimiento ?? Number(cotizacionActual.porcentajeMantenimiento),
+        porcentajeIndirectos: dto.porcentajeIndirectos ?? Number(cotizacionActual.porcentajeIndirectos),
       });
 
       return this.prisma.cotizacion.update({
         where: { id },
         data: {
           ...dto,
-          dieselEstimado: simulacion.costos.diesel,
-          casetasEstimado: simulacion.costos.casetas,
-          viaticosEstimado: simulacion.costos.viaticos,
-          salarioEstimado: simulacion.costos.salario,
+          kmCargado: simulacion.kmCargado,
+          kmVacio: simulacion.kmVacio,
+          kmTotal: simulacion.kmTotal,
+          dieselEstimado: simulacion.diesel.costo,
+          casetasEstimado: simulacion.casetas.total,
+          viaticosEstimado: simulacion.viaticos.total,
+          costoTotal: simulacion.costoTotal,
           utilidadEsperada: simulacion.utilidadEsperada,
           margenEsperado: simulacion.margenEsperado,
         },

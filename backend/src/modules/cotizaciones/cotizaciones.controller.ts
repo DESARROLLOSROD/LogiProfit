@@ -19,9 +19,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { CotizacionesService } from './cotizaciones.service';
-import { CreateCotizacionDto } from './dto/create-cotizacion.dto';
-import { UpdateCotizacionDto } from './dto/update-cotizacion.dto';
-import { SimularCostosDto } from './dto/simular-costos.dto';
+import { CreateCotizacionDto, UpdateCotizacionDto, SimularCostosDto } from './dto/cotizacion.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EstadoCotizacion } from '@prisma/client';
 
