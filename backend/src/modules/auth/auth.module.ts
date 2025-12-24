@@ -9,6 +9,7 @@ import { UsuariosModule } from '../usuarios/usuarios.module';
 
 @Module({
   imports: [
+    ConfigModule,
     UsuariosModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
