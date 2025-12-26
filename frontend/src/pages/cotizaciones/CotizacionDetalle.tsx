@@ -103,7 +103,68 @@ export default function CotizacionDetalle() {
   const fetchCotizacion = async () => {
     try {
       const response = await api.get(`/cotizaciones/${id}`)
-      setCotizacion(response.data)
+
+      // Convertir campos Decimal de Prisma (vienen como strings) a números
+      const data = response.data
+      const cotizacionConvertida = {
+        ...data,
+        // Kilometraje
+        kmCargado: Number(data.kmCargado) || 0,
+        kmVacio: Number(data.kmVacio) || 0,
+        kmTotal: Number(data.kmTotal) || 0,
+
+        // Costos de combustible
+        costoDieselCargado: Number(data.costoDieselCargado) || 0,
+        costoDieselVacio: Number(data.costoDieselVacio) || 0,
+        costoDieselTotal: Number(data.costoDieselTotal) || 0,
+
+        // Casetas
+        casetasCargado: Number(data.casetasCargado) || 0,
+        casetasVacio: Number(data.casetasVacio) || 0,
+        costoCasetasTotal: Number(data.costoCasetasTotal) || 0,
+
+        // Viáticos
+        diasViaje: Number(data.diasViaje) || 0,
+        viaticosAlimentos: Number(data.viaticosAlimentos) || 0,
+        viaticosHospedaje: Number(data.viaticosHospedaje) || 0,
+        viaticosExtras: Number(data.viaticosExtras) || 0,
+        costoViaticosTotal: Number(data.costoViaticosTotal) || 0,
+
+        // Salario
+        salarioChofer: Number(data.salarioChofer) || 0,
+
+        // Permiso SCT
+        permisoSCT: Number(data.permisoSCT) || 0,
+
+        // Subtotal operativo
+        subtotalOperativo: Number(data.subtotalOperativo) || 0,
+
+        // Costos porcentuales
+        porcentajeMantenimiento: Number(data.porcentajeMantenimiento) || 0,
+        costoMantenimiento: Number(data.costoMantenimiento) || 0,
+        porcentajeIndirectos: Number(data.porcentajeIndirectos) || 0,
+        costoIndirectos: Number(data.costoIndirectos) || 0,
+
+        // Carro piloto
+        diasCarroPiloto: Number(data.diasCarroPiloto) || 0,
+        costoBaseCarroPiloto: Number(data.costoBaseCarroPiloto) || 0,
+        costoGasolinaCarroPiloto: Number(data.costoGasolinaCarroPiloto) || 0,
+        costoCarroPilotoTotal: Number(data.costoCarroPilotoTotal) || 0,
+
+        // Totales
+        costoTotal: Number(data.costoTotal) || 0,
+        precioCotizado: Number(data.precioCotizado) || 0,
+        utilidadEsperada: Number(data.utilidadEsperada) || 0,
+        margenEsperado: Number(data.margenEsperado) || 0,
+
+        // Información de carga
+        pesoCarga: Number(data.pesoCarga) || 0,
+        largo: Number(data.largo) || 0,
+        ancho: Number(data.ancho) || 0,
+        alto: Number(data.alto) || 0,
+      }
+
+      setCotizacion(cotizacionConvertida)
     } catch {
       navigate('/cotizaciones')
     } finally {

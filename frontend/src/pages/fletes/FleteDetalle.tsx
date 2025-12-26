@@ -93,7 +93,34 @@ export default function FleteDetalle() {
   const fetchFlete = async () => {
     try {
       const response = await api.get(`/fletes/${id}`)
-      setFlete(response.data)
+
+      // Convertir campos Decimal de Prisma (vienen como strings) a números
+      const data = response.data
+      const fleteConvertido = {
+        ...data,
+        precioCliente: Number(data.precioCliente) || 0,
+        choferes: data.choferes.map((ch: any) => ({
+          ...ch,
+          tarifaDia: Number(ch.tarifaDia) || 0,
+          tarifaKm: Number(ch.tarifaKm) || 0,
+          tarifaViaje: Number(ch.tarifaViaje) || 0,
+          dias: Number(ch.dias) || 0,
+          kmReales: Number(ch.kmReales) || 0,
+          salarioCalculado: Number(ch.salarioCalculado) || 0,
+        })),
+        gastos: data.gastos.map((gasto: any) => ({
+          ...gasto,
+          monto: Number(gasto.monto) || 0,
+        })),
+        resumen: {
+          precioCliente: Number(data.resumen.precioCliente) || 0,
+          totalGastos: Number(data.resumen.totalGastos) || 0,
+          utilidad: Number(data.resumen.utilidad) || 0,
+          margen: Number(data.resumen.margen) || 0,
+        },
+      }
+
+      setFlete(fleteConvertido)
     } catch {
       navigate('/fletes')
     } finally {

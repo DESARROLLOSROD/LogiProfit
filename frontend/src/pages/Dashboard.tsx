@@ -70,7 +70,41 @@ export default function Dashboard() {
   const fetchDashboard = async () => {
     try {
       const response = await api.get('/reportes/dashboard')
-      setData(response.data)
+
+      // Convertir campos Decimal de Prisma (vienen como strings) a números
+      const rawData = response.data
+      const dataConvertida = {
+        ...rawData,
+        resumen: {
+          ...rawData.resumen,
+          utilidadMes: Number(rawData.resumen.utilidadMes) || 0,
+          ingresosMes: Number(rawData.resumen.ingresosMes) || 0,
+          gastosMes: Number(rawData.resumen.gastosMes) || 0,
+          margenPromedio: Number(rawData.resumen.margenPromedio) || 0,
+        },
+        tendenciaMensual: rawData.tendenciaMensual.map((item: any) => ({
+          ...item,
+          ingresos: Number(item.ingresos) || 0,
+          gastos: Number(item.gastos) || 0,
+          utilidad: Number(item.utilidad) || 0,
+          margen: Number(item.margen) || 0,
+        })),
+        topRentables: rawData.topRentables.map((item: any) => ({
+          ...item,
+          utilidad: Number(item.utilidad) || 0,
+        })),
+        topPerdidas: rawData.topPerdidas.map((item: any) => ({
+          ...item,
+          utilidad: Number(item.utilidad) || 0,
+        })),
+        topClientes: rawData.topClientes.map((item: any) => ({
+          ...item,
+          utilidad: Number(item.utilidad) || 0,
+          margen: Number(item.margen) || 0,
+        })),
+      }
+
+      setData(dataConvertida)
     } catch (error) {
       console.error('Error fetching dashboard:', error)
     } finally {

@@ -62,7 +62,18 @@ export default function Fletes() {
   const fetchFletes = async () => {
     try {
       const response = await api.get('/fletes')
-      setFletes(response.data)
+
+      // Convertir campos Decimal de Prisma (vienen como strings) a números
+      const fletesConvertidos = response.data.map((flete: any) => ({
+        ...flete,
+        precioCliente: Number(flete.precioCliente) || 0,
+        gastos: flete.gastos.map((gasto: any) => ({
+          ...gasto,
+          monto: Number(gasto.monto) || 0,
+        })),
+      }))
+
+      setFletes(fletesConvertidos)
     } catch (error) {
       console.error('Error:', error)
     } finally {
