@@ -47,30 +47,30 @@ export default function Cotizaciones() {
   const [ordenarPor, setOrdenarPor] = useState<'fecha' | 'folio' | 'precio' | 'margen'>('fecha')
   const [ordenDireccion, setOrdenDireccion] = useState<'asc' | 'desc'>('desc')
 
-  const fetchCotizaciones = useCallback(async () => {
-    try {
-      const response = await api.get('/cotizaciones')
-      setCotizaciones(response.data)
-    } catch (error) {
-      console.error('Error:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  const fetchClientes = useCallback(async () => {
-    try {
-      const response = await api.get('/clientes')
-      setClientes(response.data)
-    } catch (error) {
-      console.error('Error:', error)
-    }
-  }, [])
-
   useEffect(() => {
+    const fetchCotizaciones = async () => {
+      try {
+        const response = await api.get('/cotizaciones')
+        setCotizaciones(response.data)
+      } catch (error) {
+        console.error('Error:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    const fetchClientes = async () => {
+      try {
+        const response = await api.get('/clientes')
+        setClientes(response.data)
+      } catch (error) {
+        console.error('Error:', error)
+      }
+    }
+
     fetchCotizaciones()
     fetchClientes()
-  }, [fetchCotizaciones, fetchClientes])
+  }, [])
 
   // Memoizar cotizaciones filtradas y ordenadas
   const filteredCotizaciones = useMemo(() => {

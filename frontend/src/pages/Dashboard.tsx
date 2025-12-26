@@ -67,19 +67,6 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchDashboard()
-
-    // Verificar notificaciones cada 5 minutos
-    const notificationInterval = setInterval(() => {
-      if (data) {
-        runAllNotificationChecks({ fletes: data.topPerdidas })
-      }
-    }, 5 * 60 * 1000) // 5 minutos
-
-    return () => clearInterval(notificationInterval)
-  }, [data])
-
   const fetchDashboard = async () => {
     try {
       const response = await api.get('/reportes/dashboard')
@@ -90,6 +77,21 @@ export default function Dashboard() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchDashboard()
+  }, [])
+
+  useEffect(() => {
+    // Verificar notificaciones cada 5 minutos
+    if (!data) return
+
+    const notificationInterval = setInterval(() => {
+      runAllNotificationChecks({ fletes: data.topPerdidas })
+    }, 5 * 60 * 1000) // 5 minutos
+
+    return () => clearInterval(notificationInterval)
+  }, [data?.topPerdidas])
 
   if (loading) {
     return (

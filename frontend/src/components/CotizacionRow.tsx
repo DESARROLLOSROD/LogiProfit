@@ -19,6 +19,11 @@ interface CotizacionRowProps {
 }
 
 const CotizacionRow = memo(({ cotizacion, formatMoney, getEstadoBadge }: CotizacionRowProps) => {
+  // Convertir valores Decimal a números
+  const precioCotizado = Number(cotizacion.precioCotizado)
+  const utilidadEsperada = Number(cotizacion.utilidadEsperada)
+  const margenEsperado = Number(cotizacion.margenEsperado)
+
   return (
     <tr>
       <td className="font-medium">{cotizacion.folio}</td>
@@ -26,11 +31,11 @@ const CotizacionRow = memo(({ cotizacion, formatMoney, getEstadoBadge }: Cotizac
       <td className="text-sm text-gray-600">
         {cotizacion.origen} → {cotizacion.destino}
       </td>
-      <td>{formatMoney(cotizacion.precioCotizado)}</td>
-      <td className={cotizacion.utilidadEsperada >= 0 ? 'text-green-600' : 'text-red-600'}>
-        {formatMoney(cotizacion.utilidadEsperada)}
+      <td>{formatMoney(precioCotizado)}</td>
+      <td className={utilidadEsperada >= 0 ? 'text-green-600' : 'text-red-600'}>
+        {formatMoney(utilidadEsperada)}
       </td>
-      <td>{cotizacion.margenEsperado.toFixed(1)}%</td>
+      <td>{margenEsperado.toFixed(1)}%</td>
       <td>
         <span className={`badge ${getEstadoBadge(cotizacion.estado)}`}>
           {cotizacion.estado}
