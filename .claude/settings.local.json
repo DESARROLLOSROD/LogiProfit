@@ -15,7 +15,8 @@
       "Bash(timeout 60 npm run build:*)",
       "Bash(taskkill:*)",
       "Bash(timeout 30 npx prisma generate:*)",
-      "Bash(timeout 10 npm run start:dev)"
+      "Bash(timeout 10 npm run start:dev)",
+      "Bash(npm ls:*)"
     ]
   }
 }
