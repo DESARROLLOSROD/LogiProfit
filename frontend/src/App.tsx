@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useAuthStore } from './stores/authStore'
+import { connectWebSocket, disconnectWebSocket } from './lib/websocket'
 
 // Layouts
 import AuthLayout from './layouts/AuthLayout'
@@ -34,6 +36,21 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const { usuario, isAuthenticated } = useAuthStore()
+
+  // Conectar WebSocket cuando el usuario esté autenticado
+  useEffect(() => {
+    if (isAuthenticated && usuario?.empresa?.id) {
+      console.log('[App] Conectando WebSocket para empresa:', usuario.empresa.id)
+      connectWebSocket(usuario.empresa.id)
+
+      return () => {
+        console.log('[App] Desconectando WebSocket')
+        disconnectWebSocket()
+      }
+    }
+  }, [isAuthenticated, usuario?.empresa?.id])
+
   return (
     <Routes>
       {/* Auth Routes */}

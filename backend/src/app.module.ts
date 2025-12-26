@@ -11,6 +11,8 @@ import { CotizacionesModule } from './modules/cotizaciones/cotizaciones.module';
 import { FletesModule } from './modules/fletes/fletes.module';
 import { GastosModule } from './modules/gastos/gastos.module';
 import { ReportesModule } from './modules/reportes/reportes.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { MantenimientoModule } from './modules/mantenimiento/mantenimiento.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { ReportesModule } from './modules/reportes/reportes.module';
     FletesModule,
     GastosModule,
     ReportesModule,
+    NotificationsModule,
+    MantenimientoModule,
   ],
 })
 export class AppModule {}

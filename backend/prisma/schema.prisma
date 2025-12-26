@@ -49,7 +49,8 @@ model Usuario {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresa  Empresa               @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  permisos UsuarioPermiso[]
 
   @@map("usuarios")
 }
@@ -60,6 +61,34 @@ enum RolUsuario {
   CHOFER
   CONTABILIDAD
   DIRECCION
+}
+
+// ==================== PERMISOS RBAC ====================
+
+model Permiso {
+  id          Int              @id @default(autoincrement())
+  modulo      String           // "cotizaciones", "fletes", "reportes", etc.
+  accion      String           // "crear", "leer", "actualizar", "eliminar", "exportar"
+  descripcion String
+  createdAt   DateTime         @default(now())
+
+  usuarios    UsuarioPermiso[]
+
+  @@unique([modulo, accion])
+  @@map("permisos")
+}
+
+model UsuarioPermiso {
+  id         Int      @id @default(autoincrement())
+  usuarioId  Int
+  permisoId  Int
+  createdAt  DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  permiso Permiso @relation(fields: [permisoId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, permisoId])
+  @@map("usuario_permisos")
 }
 
 model Cliente {
@@ -221,13 +250,15 @@ model Camion {
   rendimientoKmLCargado Decimal  @default(2.5) @db.Decimal(5, 2) // km por litro cargado
   rendimientoKmLVacio   Decimal  @default(3.0) @db.Decimal(5, 2) // km por litro vacío
   capacidadCarga        Decimal? @db.Decimal(10, 2) // toneladas
+  kmActual              Decimal  @default(0) @db.Decimal(10, 2) // odómetro actual
   activo                Boolean  @default(true)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  empresa Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  fletes  FleteCamion[]
-  gastos  Gasto[]
+  empresa        Empresa             @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  fletes         FleteCamion[]
+  gastos         Gasto[]
+  mantenimientos Mantenimiento[]
 
   @@unique([empresaId, placas])
   @@map("camiones")
@@ -312,24 +343,42 @@ model FleteChofer {
 
 // ==================== GASTOS ====================
 
+model CategoriaGasto {
+  id            Int      @id @default(autoincrement())
+  empresaId     Int
+  nombre        String
+  descripcion   String?
+  color         String?  // Hex color para UI
+  activa        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  gastos        Gasto[]
+  presupuestos  PresupuestoCategoria[]
+
+  @@map("categorias_gasto")
+}
+
 model Gasto {
-  id             Int       @id @default(autoincrement())
+  id             Int              @id @default(autoincrement())
   fleteId        Int
   camionId       Int?
+  categoriaId    Int?
   tipo           TipoGasto
   concepto       String?
-  monto          Decimal   @db.Decimal(12, 2)
+  monto          Decimal          @db.Decimal(12, 2)
   fecha          DateTime
   comprobanteUrl String?
-  validado       Boolean   @default(false)
+  validado       Boolean          @default(false)
   validadoPor    Int?
   validadoAt     DateTime?
   notas          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  flete  Flete   @relation(fields: [fleteId], references: [id], onDelete: Cascade)
-  camion Camion? @relation(fields: [camionId], references: [id])
+  flete     Flete            @relation(fields: [fleteId], references: [id], onDelete: Cascade)
+  camion    Camion?          @relation(fields: [camionId], references: [id])
+  categoria CategoriaGasto?  @relation(fields: [categoriaId], references: [id])
 
   @@map("gastos")
 }
@@ -344,4 +393,79 @@ enum TipoGasto {
   PENSION
   MANIOBRAS
   OTRO
+}
+
+// ==================== PRESUPUESTOS ====================
+
+model Presupuesto {
+  id          Int      @id @default(autoincrement())
+  empresaId   Int
+  nombre      String
+  periodo     String   // "2024-01", "2024-Q1", "2024"
+  total       Decimal  @db.Decimal(12, 2)
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categorias  PresupuestoCategoria[]
+
+  @@map("presupuestos")
+}
+
+model PresupuestoCategoria {
+  id             Int            @id @default(autoincrement())
+  presupuestoId  Int
+  categoriaId    Int
+  monto          Decimal        @db.Decimal(12, 2)
+  createdAt      DateTime       @default(now())
+
+  presupuesto    Presupuesto    @relation(fields: [presupuestoId], references: [id], onDelete: Cascade)
+  categoria      CategoriaGasto @relation(fields: [categoriaId], references: [id])
+
+  @@unique([presupuestoId, categoriaId])
+  @@map("presupuesto_categorias")
+}
+
+// ==================== MANTENIMIENTO ====================
+
+model Mantenimiento {
+  id                Int                  @id @default(autoincrement())
+  camionId          Int
+  tipo              TipoMantenimiento
+  descripcion       String
+  kmProgramado      Decimal?             @db.Decimal(10, 2)
+  fechaProgramada   DateTime?
+  kmRealizado       Decimal?             @db.Decimal(10, 2)
+  fechaRealizado    DateTime?
+  costo             Decimal?             @db.Decimal(12, 2)
+  proveedor         String?
+  comprobanteUrl    String?
+  estado            EstadoMantenimiento  @default(PENDIENTE)
+  notas             String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  camion Camion @relation(fields: [camionId], references: [id], onDelete: Cascade)
+
+  @@map("mantenimientos")
+}
+
+enum TipoMantenimiento {
+  PREVENTIVO
+  CORRECTIVO
+  CAMBIO_ACEITE
+  CAMBIO_LLANTAS
+  FRENOS
+  SUSPENSION
+  ELECTRICO
+  TRANSMISION
+  MOTOR
+  OTRO
+}
+
+enum EstadoMantenimiento {
+  PENDIENTE
+  EN_PROCESO
+  COMPLETADO
+  CANCELADO
 }

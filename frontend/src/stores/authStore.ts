@@ -11,6 +11,12 @@ interface Usuario {
     id: number
     nombre: string
   }
+  permisos?: Array<{
+    permiso: {
+      modulo: string
+      accion: string
+    }
+  }>
 }
 
 interface AuthState {

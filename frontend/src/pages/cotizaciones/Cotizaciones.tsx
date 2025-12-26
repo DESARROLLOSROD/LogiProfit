@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
   PlusIcon,
@@ -11,11 +11,14 @@ import api from '../../lib/api'
 import Pagination from '../../components/Pagination'
 import { exportarCotizacionesAExcel } from '../../lib/excelExport'
 import { DocumentArrowDownIcon } from '@heroicons/react/24/outline'
+import AdvancedFilters, { FilterConfig } from '../../components/AdvancedFilters'
+import CotizacionRow from '../../components/CotizacionRow'
+import { useDebounce } from '../../hooks/useDebounce'
 
 interface Cotizacion {
   id: number
   folio: string
-  cliente: { nombre: string }
+  cliente: { id: number; nombre: string }
   origen: string
   destino: string
   precioCotizado: number
@@ -27,12 +30,14 @@ interface Cotizacion {
 
 export default function Cotizaciones() {
   const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([])
-  const [filteredCotizaciones, setFilteredCotizaciones] = useState<Cotizacion[]>([])
   const [loading, setLoading] = useState(true)
+  const [clientes, setClientes] = useState<Array<{ id: number; nombre: string }>>([])
 
   // Filtros
   const [busqueda, setBusqueda] = useState('')
+  const debouncedBusqueda = useDebounce(busqueda, 300)
   const [filtroEstado, setFiltroEstado] = useState('TODAS')
+  const [advancedFilters, setAdvancedFilters] = useState<FilterConfig>({})
 
   // Paginación
   const [paginaActual, setPaginaActual] = useState(1)
@@ -42,15 +47,7 @@ export default function Cotizaciones() {
   const [ordenarPor, setOrdenarPor] = useState<'fecha' | 'folio' | 'precio' | 'margen'>('fecha')
   const [ordenDireccion, setOrdenDireccion] = useState<'asc' | 'desc'>('desc')
 
-  useEffect(() => {
-    fetchCotizaciones()
-  }, [])
-
-  useEffect(() => {
-    aplicarFiltros()
-  }, [cotizaciones, busqueda, filtroEstado])
-
-  const fetchCotizaciones = async () => {
+  const fetchCotizaciones = useCallback(async () => {
     try {
       const response = await api.get('/cotizaciones')
       setCotizaciones(response.data)
@@ -59,14 +56,29 @@ export default function Cotizaciones() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const aplicarFiltros = () => {
+  const fetchClientes = useCallback(async () => {
+    try {
+      const response = await api.get('/clientes')
+      setClientes(response.data)
+    } catch (error) {
+      console.error('Error:', error)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchCotizaciones()
+    fetchClientes()
+  }, [fetchCotizaciones, fetchClientes])
+
+  // Memoizar cotizaciones filtradas y ordenadas
+  const filteredCotizaciones = useMemo(() => {
     let resultado = [...cotizaciones]
 
-    // Filtro por búsqueda (folio o cliente)
-    if (busqueda) {
-      const termino = busqueda.toLowerCase()
+    // Filtro por búsqueda (folio o cliente) - usando debounced
+    if (debouncedBusqueda) {
+      const termino = debouncedBusqueda.toLowerCase()
       resultado = resultado.filter(
         (cot) =>
           cot.folio.toLowerCase().includes(termino) ||
@@ -79,6 +91,42 @@ export default function Cotizaciones() {
     // Filtro por estado
     if (filtroEstado !== 'TODAS') {
       resultado = resultado.filter((cot) => cot.estado === filtroEstado)
+    }
+
+    // Filtros avanzados - Rango de fechas
+    if (advancedFilters.fechaDesde) {
+      const fechaDesde = new Date(advancedFilters.fechaDesde).getTime()
+      resultado = resultado.filter((cot) => new Date(cot.createdAt).getTime() >= fechaDesde)
+    }
+    if (advancedFilters.fechaHasta) {
+      const fechaHasta = new Date(advancedFilters.fechaHasta).getTime()
+      resultado = resultado.filter((cot) => new Date(cot.createdAt).getTime() <= fechaHasta)
+    }
+
+    // Filtro por cliente
+    if (advancedFilters.clienteId) {
+      resultado = resultado.filter((cot) => cot.cliente.id === advancedFilters.clienteId)
+    }
+
+    // Filtro por margen
+    if (advancedFilters.margenMin !== undefined) {
+      resultado = resultado.filter((cot) => cot.margenEsperado >= advancedFilters.margenMin!)
+    }
+    if (advancedFilters.margenMax !== undefined) {
+      resultado = resultado.filter((cot) => cot.margenEsperado <= advancedFilters.margenMax!)
+    }
+
+    // Filtro por precio
+    if (advancedFilters.precioMin !== undefined) {
+      resultado = resultado.filter((cot) => cot.precioCotizado >= advancedFilters.precioMin!)
+    }
+    if (advancedFilters.precioMax !== undefined) {
+      resultado = resultado.filter((cot) => cot.precioCotizado <= advancedFilters.precioMax!)
+    }
+
+    // Filtro por estado avanzado
+    if (advancedFilters.estado) {
+      resultado = resultado.filter((cot) => cot.estado === advancedFilters.estado)
     }
 
     // Ordenamiento
@@ -103,27 +151,26 @@ export default function Cotizaciones() {
       return ordenDireccion === 'asc' ? compareValue : -compareValue
     })
 
-    setFilteredCotizaciones(resultado)
-    setPaginaActual(1) // Reset a página 1 cuando cambian filtros
-  }
+    return resultado
+  }, [cotizaciones, debouncedBusqueda, filtroEstado, advancedFilters, ordenarPor, ordenDireccion])
 
-  const toggleOrden = (campo: 'fecha' | 'folio' | 'precio' | 'margen') => {
+  const toggleOrden = useCallback((campo: 'fecha' | 'folio' | 'precio' | 'margen') => {
     if (ordenarPor === campo) {
       setOrdenDireccion(ordenDireccion === 'asc' ? 'desc' : 'asc')
     } else {
       setOrdenarPor(campo)
       setOrdenDireccion('desc')
     }
-  }
+  }, [ordenarPor, ordenDireccion])
 
-  const formatMoney = (amount: number) => {
+  const formatMoney = useCallback((amount: number) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
       currency: 'MXN',
     }).format(amount)
-  }
+  }, [])
 
-  const getEstadoBadge = (estado: string) => {
+  const getEstadoBadge = useCallback((estado: string) => {
     const badges: Record<string, string> = {
       BORRADOR: 'badge-gray',
       ENVIADA: 'badge-info',
@@ -133,13 +180,24 @@ export default function Cotizaciones() {
       CANCELADA: 'badge-danger',
     }
     return badges[estado] || 'badge-gray'
-  }
+  }, [])
 
-  // Paginación
-  const totalPaginas = Math.ceil(filteredCotizaciones.length / itemsPorPagina)
-  const indexInicio = (paginaActual - 1) * itemsPorPagina
-  const indexFin = indexInicio + itemsPorPagina
-  const cotizacionesPaginadas = filteredCotizaciones.slice(indexInicio, indexFin)
+  // Paginación - Memoizar valores derivados
+  const totalPaginas = useMemo(
+    () => Math.ceil(filteredCotizaciones.length / itemsPorPagina),
+    [filteredCotizaciones.length, itemsPorPagina]
+  )
+
+  const cotizacionesPaginadas = useMemo(() => {
+    const indexInicio = (paginaActual - 1) * itemsPorPagina
+    const indexFin = indexInicio + itemsPorPagina
+    return filteredCotizaciones.slice(indexInicio, indexFin)
+  }, [filteredCotizaciones, paginaActual, itemsPorPagina])
+
+  // Reset pagination cuando cambian los filtros
+  useEffect(() => {
+    setPaginaActual(1)
+  }, [debouncedBusqueda, filtroEstado, advancedFilters])
 
   if (loading) {
     return (
@@ -191,7 +249,7 @@ export default function Cotizaciones() {
               onChange={(e) => setBusqueda(e.target.value)}
             />
           </div>
-          <div className="w-64">
+          <div className="w-48">
             <label className="label flex items-center gap-2">
               <FunnelIcon className="w-4 h-4 text-gray-500" />
               Estado
@@ -209,6 +267,20 @@ export default function Cotizaciones() {
               <option value="CONVERTIDA">Convertida</option>
               <option value="CANCELADA">Cancelada</option>
             </select>
+          </div>
+          <div>
+            <AdvancedFilters
+              onApplyFilters={setAdvancedFilters}
+              clientes={clientes}
+              estadoOptions={[
+                { value: 'BORRADOR', label: 'Borrador' },
+                { value: 'ENVIADA', label: 'Enviada' },
+                { value: 'APROBADA', label: 'Aprobada' },
+                { value: 'RECHAZADA', label: 'Rechazada' },
+                { value: 'CONVERTIDA', label: 'Convertida' },
+                { value: 'CANCELADA', label: 'Cancelada' },
+              ]}
+            />
           </div>
         </div>
       </div>
@@ -292,38 +364,12 @@ export default function Cotizaciones() {
               </tr>
             ) : (
               cotizacionesPaginadas.map((cotizacion) => (
-                <tr key={cotizacion.id}>
-                  <td className="font-medium">{cotizacion.folio}</td>
-                  <td>{cotizacion.cliente.nombre}</td>
-                  <td className="text-sm text-gray-600">
-                    {cotizacion.origen} → {cotizacion.destino}
-                  </td>
-                  <td>{formatMoney(cotizacion.precioCotizado)}</td>
-                  <td
-                    className={
-                      cotizacion.utilidadEsperada >= 0 ? 'text-green-600' : 'text-red-600'
-                    }
-                  >
-                    {formatMoney(cotizacion.utilidadEsperada)}
-                  </td>
-                  <td>{cotizacion.margenEsperado.toFixed(1)}%</td>
-                  <td>
-                    <span className={`badge ${getEstadoBadge(cotizacion.estado)}`}>
-                      {cotizacion.estado}
-                    </span>
-                  </td>
-                  <td className="text-sm text-gray-500">
-                    {new Date(cotizacion.createdAt).toLocaleDateString('es-MX')}
-                  </td>
-                  <td>
-                    <Link
-                      to={`/cotizaciones/${cotizacion.id}`}
-                      className="text-primary-600 hover:underline text-sm"
-                    >
-                      Ver
-                    </Link>
-                  </td>
-                </tr>
+                <CotizacionRow
+                  key={cotizacion.id}
+                  cotizacion={cotizacion}
+                  formatMoney={formatMoney}
+                  getEstadoBadge={getEstadoBadge}
+                />
               ))
             )}
           </tbody>
