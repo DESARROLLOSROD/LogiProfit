@@ -43,7 +43,7 @@ export class NotificationsGateway
     if (!this.userSockets.has(empresaId)) {
       this.userSockets.set(empresaId, new Set());
     }
-    this.userSockets.get(empresaId).add(client.id);
+    this.userSockets.get(empresaId)?.add(client.id);
     client.join(`empresa-${empresaId}`);
     this.logger.log(`Client ${client.id} joined empresa ${empresaId}`);
   }

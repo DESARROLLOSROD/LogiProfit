@@ -7,11 +7,11 @@ import {
   Param,
   Delete,
   UseGuards,
-  Request,
+  Req,
   ParseIntPipe,
 } from '@nestjs/common';
 import { MantenimientoService } from './mantenimiento.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 
@@ -22,38 +22,38 @@ export class MantenimientoController {
 
   @Post()
   @RequirePermissions({ modulo: 'mantenimiento', accion: 'crear' })
-  create(@Request() req, @Body() createDto: any) {
+  create(@Req() req: any, @Body() createDto: any) {
     return this.mantenimientoService.create(createDto);
   }
 
   @Get()
   @RequirePermissions({ modulo: 'mantenimiento', accion: 'leer' })
-  findAll(@Request() req) {
+  findAll(@Req() req: any) {
     return this.mantenimientoService.findAll(req.user.empresaId);
   }
 
   @Get('pendientes')
   @RequirePermissions({ modulo: 'mantenimiento', accion: 'leer' })
-  findPendientes(@Request() req) {
+  findPendientes(@Req() req: any) {
     return this.mantenimientoService.findPendientes(req.user.empresaId);
   }
 
   @Get('proximos')
   @RequirePermissions({ modulo: 'mantenimiento', accion: 'leer' })
-  getProximos(@Request() req) {
+  getProximos(@Req() req: any) {
     return this.mantenimientoService.getProximosMantenimientos(req.user.empresaId);
   }
 
   @Get('estado/:estado')
   @RequirePermissions({ modulo: 'mantenimiento', accion: 'leer' })
-  findByEstado(@Request() req, @Param('estado') estado: string) {
+  findByEstado(@Req() req: any, @Param('estado') estado: string) {
     return this.mantenimientoService.findByEstado(req.user.empresaId, estado);
   }
 
   @Get('camion/:camionId')
   @RequirePermissions({ modulo: 'mantenimiento', accion: 'leer' })
   getHistorialCamion(
-    @Request() req,
+    @Req() req: any,
     @Param('camionId', ParseIntPipe) camionId: number,
   ) {
     return this.mantenimientoService.getHistorialCamion(camionId, req.user.empresaId);
@@ -61,14 +61,14 @@ export class MantenimientoController {
 
   @Get(':id')
   @RequirePermissions({ modulo: 'mantenimiento', accion: 'leer' })
-  findOne(@Request() req, @Param('id', ParseIntPipe) id: number) {
+  findOne(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.mantenimientoService.findOne(id, req.user.empresaId);
   }
 
   @Patch(':id')
   @RequirePermissions({ modulo: 'mantenimiento', accion: 'actualizar' })
   update(
-    @Request() req,
+    @Req() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: any,
   ) {
@@ -78,7 +78,7 @@ export class MantenimientoController {
   @Patch(':id/completar')
   @RequirePermissions({ modulo: 'mantenimiento', accion: 'actualizar' })
   completar(
-    @Request() req,
+    @Req() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Body() data: any,
   ) {
@@ -87,7 +87,7 @@ export class MantenimientoController {
 
   @Delete(':id')
   @RequirePermissions({ modulo: 'mantenimiento', accion: 'eliminar' })
-  remove(@Request() req, @Param('id', ParseIntPipe) id: number) {
+  remove(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.mantenimientoService.remove(id, req.user.empresaId);
   }
 }
