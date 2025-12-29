@@ -132,11 +132,15 @@ export function checkFleteUrgentes(fletes: any[]) {
 // Verificar fletes con pérdida
 export function checkFletesPerdida(fletes: any[]) {
   fletes.forEach((flete) => {
-    const totalGastos = flete.gastos?.reduce(
-      (sum: number, g: any) => sum + Number(g.monto),
+    // Verificar que gastos sea un array válido
+    const gastosArray = Array.isArray(flete.gastos) ? flete.gastos : []
+
+    const totalGastos = gastosArray.reduce(
+      (sum: number, g: any) => sum + (Number(g.monto) || 0),
       0
-    ) || 0
-    const utilidad = Number(flete.precioCliente) - totalGastos
+    )
+
+    const utilidad = Number(flete.precioCliente || 0) - totalGastos
     const margen =
       flete.precioCliente > 0 ? (utilidad / Number(flete.precioCliente)) * 100 : 0
 

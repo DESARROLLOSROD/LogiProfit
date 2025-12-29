@@ -312,6 +312,8 @@ enum TipoPago {
   POR_DIA
   POR_VIAJE
   POR_KM
+  POR_QUINCENA
+  MENSUAL
 }
 
 // ==================== ASIGNACIONES ====================

@@ -1,6 +1,6 @@
 // Service Worker para LogiProfit PWA
-const CACHE_NAME = 'logiprofit-v1'
-const API_CACHE_NAME = 'logiprofit-api-v1'
+const CACHE_NAME = 'logiprofit-v2'
+const API_CACHE_NAME = 'logiprofit-api-v2'
 
 // Assets estáticos críticos para cache
 const STATIC_ASSETS = [
@@ -120,12 +120,25 @@ async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName)
   const cachedResponse = await cache.match(request)
 
-  const fetchPromise = fetch(request).then((networkResponse) => {
-    if (networkResponse.ok) {
-      cache.put(request, networkResponse.clone())
-    }
-    return networkResponse
-  })
+  const fetchPromise = fetch(request)
+    .then((networkResponse) => {
+      if (networkResponse.ok) {
+        cache.put(request, networkResponse.clone())
+      }
+      return networkResponse
+    })
+    .catch((error) => {
+      console.log('[SW] Fetch error en staleWhileRevalidate:', error.message)
+      // Si falla el fetch y hay cache, retornar el cache
+      if (cachedResponse) {
+        return cachedResponse
+      }
+      // Si no hay cache, retornar error
+      return new Response(JSON.stringify({ error: 'Offline' }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    })
 
   // Retornar cached inmediatamente si existe, sino esperar network
   return cachedResponse || fetchPromise

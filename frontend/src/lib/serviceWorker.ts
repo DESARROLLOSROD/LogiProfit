@@ -114,3 +114,16 @@ export function isOffline(): boolean {
 export function isServiceWorkerActive(): boolean {
   return 'serviceWorker' in navigator && !!navigator.serviceWorker.controller
 }
+
+// Desregistrar Service Worker y limpiar todo (útil para resolver problemas)
+export async function unregisterServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations()
+    for (const registration of registrations) {
+      await registration.unregister()
+      console.log('[App] Service Worker desregistrado')
+    }
+    await clearAllCaches()
+    console.log('[App] Service Worker y caches eliminados completamente')
+  }
+}

@@ -9,9 +9,7 @@ interface Chofer {
   telefono?: string
   tipo: string
   tipoPago: string
-  tarifaDia?: number
-  tarifaKm?: number
-  tarifaViaje?: number
+  tarifa: number
   activo: boolean
 }
 
@@ -24,6 +22,8 @@ const TIPOS_PAGO = {
   POR_DIA: 'Por Día',
   POR_KM: 'Por Kilómetro',
   POR_VIAJE: 'Por Viaje',
+  POR_QUINCENA: 'Por Quincena',
+  MENSUAL: 'Mensual',
 }
 
 export default function Choferes() {
@@ -36,9 +36,7 @@ export default function Choferes() {
     telefono: '',
     tipo: 'FIJO',
     tipoPago: 'POR_DIA',
-    tarifaDia: '600',
-    tarifaKm: '5',
-    tarifaViaje: '3000',
+    tarifa: '600',
   })
 
   useEffect(() => {
@@ -63,9 +61,7 @@ export default function Choferes() {
       telefono: '',
       tipo: 'FIJO',
       tipoPago: 'POR_DIA',
-      tarifaDia: '600',
-      tarifaKm: '5',
-      tarifaViaje: '3000',
+      tarifa: '600',
     })
     setShowModal(true)
   }
@@ -77,9 +73,7 @@ export default function Choferes() {
       telefono: chofer.telefono || '',
       tipo: chofer.tipo,
       tipoPago: chofer.tipoPago,
-      tarifaDia: chofer.tarifaDia?.toString() || '600',
-      tarifaKm: chofer.tarifaKm?.toString() || '5',
-      tarifaViaje: chofer.tarifaViaje?.toString() || '3000',
+      tarifa: chofer.tarifa.toString(),
     })
     setShowModal(true)
   }
@@ -90,20 +84,17 @@ export default function Choferes() {
       return
     }
 
-    const data: any = {
+    if (!form.tarifa || Number(form.tarifa) <= 0) {
+      toast.error('La tarifa es obligatoria y debe ser mayor a 0')
+      return
+    }
+
+    const data = {
       nombre: form.nombre,
       telefono: form.telefono || undefined,
       tipo: form.tipo,
       tipoPago: form.tipoPago,
-    }
-
-    // Agregar tarifa según tipo de pago
-    if (form.tipoPago === 'POR_DIA') {
-      data.tarifaDia = Number(form.tarifaDia)
-    } else if (form.tipoPago === 'POR_KM') {
-      data.tarifaKm = Number(form.tarifaKm)
-    } else if (form.tipoPago === 'POR_VIAJE') {
-      data.tarifaViaje = Number(form.tarifaViaje)
+      tarifa: Number(form.tarifa),
     }
 
     try {
@@ -135,14 +126,21 @@ export default function Choferes() {
     new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount)
 
   const getTarifaDisplay = (chofer: Chofer) => {
-    if (chofer.tipoPago === 'POR_DIA') {
-      return `${formatMoney(chofer.tarifaDia || 0)}/día`
-    } else if (chofer.tipoPago === 'POR_KM') {
-      return `${formatMoney(chofer.tarifaKm || 0)}/km`
-    } else if (chofer.tipoPago === 'POR_VIAJE') {
-      return `${formatMoney(chofer.tarifaViaje || 0)}/viaje`
+    const tarifa = formatMoney(chofer.tarifa || 0)
+    switch (chofer.tipoPago) {
+      case 'POR_DIA':
+        return `${tarifa}/día`
+      case 'POR_KM':
+        return `${tarifa}/km`
+      case 'POR_VIAJE':
+        return `${tarifa}/viaje`
+      case 'POR_QUINCENA':
+        return `${tarifa}/quincena`
+      case 'MENSUAL':
+        return `${tarifa}/mes`
+      default:
+        return tarifa
     }
-    return '-'
   }
 
   if (loading)
@@ -291,53 +289,41 @@ export default function Choferes() {
                 </div>
               </div>
 
-              {form.tipoPago === 'POR_DIA' && (
-                <div>
-                  <label className="label">Tarifa por Día *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="50"
-                    className="input"
-                    placeholder="600"
-                    value={form.tarifaDia}
-                    onChange={(e) => setForm({ ...form, tarifaDia: e.target.value })}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Monto que se paga por día trabajado</p>
-                </div>
-              )}
-
-              {form.tipoPago === 'POR_KM' && (
-                <div>
-                  <label className="label">Tarifa por Kilómetro *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    className="input"
-                    placeholder="5"
-                    value={form.tarifaKm}
-                    onChange={(e) => setForm({ ...form, tarifaKm: e.target.value })}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Monto que se paga por km recorrido</p>
-                </div>
-              )}
-
-              {form.tipoPago === 'POR_VIAJE' && (
-                <div>
-                  <label className="label">Tarifa por Viaje *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="100"
-                    className="input"
-                    placeholder="3000"
-                    value={form.tarifaViaje}
-                    onChange={(e) => setForm({ ...form, tarifaViaje: e.target.value })}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Monto fijo por viaje completado</p>
-                </div>
-              )}
+              <div>
+                <label className="label">
+                  Tarifa {form.tipoPago === 'POR_DIA' && 'por Día'}
+                  {form.tipoPago === 'POR_KM' && 'por Kilómetro'}
+                  {form.tipoPago === 'POR_VIAJE' && 'por Viaje'}
+                  {form.tipoPago === 'POR_QUINCENA' && 'Quincenal'}
+                  {form.tipoPago === 'MENSUAL' && 'Mensual'} *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step={form.tipoPago === 'POR_KM' ? '0.5' : '50'}
+                  className="input"
+                  placeholder={
+                    form.tipoPago === 'POR_DIA'
+                      ? '600'
+                      : form.tipoPago === 'POR_KM'
+                        ? '5'
+                        : form.tipoPago === 'POR_VIAJE'
+                          ? '3000'
+                          : form.tipoPago === 'POR_QUINCENA'
+                            ? '9000'
+                            : '18000'
+                  }
+                  value={form.tarifa}
+                  onChange={(e) => setForm({ ...form, tarifa: e.target.value })}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {form.tipoPago === 'POR_DIA' && 'Monto que se paga por día trabajado'}
+                  {form.tipoPago === 'POR_KM' && 'Monto que se paga por km recorrido'}
+                  {form.tipoPago === 'POR_VIAJE' && 'Monto fijo por viaje completado'}
+                  {form.tipoPago === 'POR_QUINCENA' && 'Monto fijo pagado cada quincena (15 días)'}
+                  {form.tipoPago === 'MENSUAL' && 'Monto fijo pagado mensualmente (30 días)'}
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-2 mt-6">

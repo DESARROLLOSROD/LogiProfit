@@ -140,8 +140,9 @@ export default function Fletes() {
   }
 
   const calcularUtilidad = (flete: Flete) => {
-    const totalGastos = flete.gastos.reduce((sum, g) => sum + Number(g.monto), 0)
-    return Number(flete.precioCliente) - totalGastos
+    const gastosArray = Array.isArray(flete.gastos) ? flete.gastos : []
+    const totalGastos = gastosArray.reduce((sum, g) => sum + (Number(g.monto) || 0), 0)
+    return Number(flete.precioCliente || 0) - totalGastos
   }
 
   const getEstadoBadge = (estado: string) => {
@@ -272,7 +273,8 @@ export default function Fletes() {
               </tr>
             ) : (
               fletesPaginados.map((flete) => {
-                const totalGastos = flete.gastos.reduce((sum, g) => sum + Number(g.monto), 0)
+                const gastosArray = Array.isArray(flete.gastos) ? flete.gastos : []
+                const totalGastos = gastosArray.reduce((sum, g) => sum + (Number(g.monto) || 0), 0)
                 const utilidad = calcularUtilidad(flete)
                 return (
                 <tr key={flete.id}>

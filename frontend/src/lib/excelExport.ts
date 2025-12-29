@@ -36,8 +36,9 @@ export const exportarCotizacionesAExcel = (cotizaciones: any[]) => {
 
 export const exportarFletesAExcel = (fletes: any[]) => {
   const datos = fletes.map((flete) => {
-    const totalGastos = flete.gastos.reduce((sum: number, g: any) => sum + Number(g.monto), 0)
-    const utilidad = Number(flete.precioCliente) - totalGastos
+    const gastosArray = Array.isArray(flete.gastos) ? flete.gastos : []
+    const totalGastos = gastosArray.reduce((sum: number, g: any) => sum + (Number(g.monto) || 0), 0)
+    const utilidad = Number(flete.precioCliente || 0) - totalGastos
 
     return {
       Folio: flete.folio,

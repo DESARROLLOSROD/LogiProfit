@@ -12,6 +12,17 @@ export class CotizacionesService {
   private readonly COSTO_CASETA_KM = 5.5; // MXN promedio (fallback si no se especifica)
   private readonly KM_POR_DIA = 400; // Promedio para calcular días
 
+  // Helper para convertir Decimal a número de forma segura
+  private toNumber(value: any): number {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number') return value;
+    if (typeof value === 'object' && 'toNumber' in value) {
+      return value.toNumber();
+    }
+    const num = Number(value);
+    return isNaN(num) ? 0 : num;
+  }
+
   // Defaults para viáticos detallados
   private readonly COSTO_COMIDA_DEFAULT = 120; // MXN
   private readonly COSTO_FEDERAL_DEFAULT = 100; // MXN
@@ -106,6 +117,14 @@ export class CotizacionesService {
             break;
           case 'POR_VIAJE':
             salarioEstimado = Number(chofer.tarifa);
+            break;
+          case 'POR_QUINCENA':
+            // Prorratear quincena (15 días) según días de viaje
+            salarioEstimado = (Number(chofer.tarifa) / 15) * diasViaje;
+            break;
+          case 'MENSUAL':
+            // Prorratear mes (30 días) según días de viaje
+            salarioEstimado = (Number(chofer.tarifa) / 30) * diasViaje;
             break;
         }
       }
@@ -344,18 +363,18 @@ export class CotizacionesService {
     // Convertir campos Decimal a números para el frontend
     return cotizaciones.map(cot => ({
       ...cot,
-      precioCotizado: Number(cot.precioCotizado),
-      utilidadEsperada: Number(cot.utilidadEsperada),
-      margenEsperado: Number(cot.margenEsperado),
-      costoTotal: Number(cot.costoTotal),
-      kmCargado: Number(cot.kmCargado),
-      kmVacio: Number(cot.kmVacio),
-      kmTotal: Number(cot.kmTotal),
-      dieselEstimado: Number(cot.dieselEstimado),
-      casetasEstimado: Number(cot.casetasEstimado),
-      viaticosEstimado: Number(cot.viaticosEstimado),
-      salarioEstimado: Number(cot.salarioEstimado),
-      permisoEstimado: Number(cot.permisoEstimado),
+      precioCotizado: this.toNumber(cot.precioCotizado),
+      utilidadEsperada: this.toNumber(cot.utilidadEsperada),
+      margenEsperado: this.toNumber(cot.margenEsperado),
+      costoTotal: this.toNumber(cot.costoTotal),
+      kmCargado: this.toNumber(cot.kmCargado),
+      kmVacio: this.toNumber(cot.kmVacio),
+      kmTotal: this.toNumber(cot.kmTotal),
+      dieselEstimado: this.toNumber(cot.dieselEstimado),
+      casetasEstimado: this.toNumber(cot.casetasEstimado),
+      viaticosEstimado: this.toNumber(cot.viaticosEstimado),
+      salarioEstimado: this.toNumber(cot.salarioEstimado),
+      permisoEstimado: this.toNumber(cot.permisoEstimado),
     }));
   }
 
@@ -372,35 +391,35 @@ export class CotizacionesService {
     // Convertir campos Decimal a números para el frontend
     return {
       ...cotizacion,
-      precioCotizado: Number(cotizacion.precioCotizado),
-      utilidadEsperada: Number(cotizacion.utilidadEsperada),
-      margenEsperado: Number(cotizacion.margenEsperado),
-      costoTotal: Number(cotizacion.costoTotal),
-      kmCargado: Number(cotizacion.kmCargado),
-      kmVacio: Number(cotizacion.kmVacio),
-      kmTotal: Number(cotizacion.kmTotal),
-      dieselEstimado: Number(cotizacion.dieselEstimado),
-      casetasEstimado: Number(cotizacion.casetasEstimado),
-      viaticosEstimado: Number(cotizacion.viaticosEstimado),
-      salarioEstimado: Number(cotizacion.salarioEstimado),
-      permisoEstimado: Number(cotizacion.permisoEstimado),
-      pesoCarga: cotizacion.pesoCarga ? Number(cotizacion.pesoCarga) : null,
-      porcentajeMantenimiento: Number(cotizacion.porcentajeMantenimiento),
-      montoMantenimiento: Number(cotizacion.montoMantenimiento),
-      porcentajeIndirectos: Number(cotizacion.porcentajeIndirectos),
-      montoIndirectos: Number(cotizacion.montoIndirectos),
-      casetasCargado: cotizacion.casetasCargado ? Number(cotizacion.casetasCargado) : null,
-      casetasVacio: cotizacion.casetasVacio ? Number(cotizacion.casetasVacio) : null,
-      comidasPrecioUnitario: cotizacion.comidasPrecioUnitario ? Number(cotizacion.comidasPrecioUnitario) : null,
-      federalPrecioUnitario: cotizacion.federalPrecioUnitario ? Number(cotizacion.federalPrecioUnitario) : null,
-      telefonoPrecioUnitario: cotizacion.telefonoPrecioUnitario ? Number(cotizacion.telefonoPrecioUnitario) : null,
-      imprevistosViaticos: cotizacion.imprevistosViaticos ? Number(cotizacion.imprevistosViaticos) : null,
-      costoBaseCarroPiloto: cotizacion.costoBaseCarroPiloto ? Number(cotizacion.costoBaseCarroPiloto) : null,
-      gasolinaCarroPiloto: cotizacion.gasolinaCarroPiloto ? Number(cotizacion.gasolinaCarroPiloto) : null,
-      casetasCarroPiloto: cotizacion.casetasCarroPiloto ? Number(cotizacion.casetasCarroPiloto) : null,
-      alimentacionCarroPiloto: cotizacion.alimentacionCarroPiloto ? Number(cotizacion.alimentacionCarroPiloto) : null,
-      imprevistosCarroPiloto: cotizacion.imprevistosCarroPiloto ? Number(cotizacion.imprevistosCarroPiloto) : null,
-      totalCarroPiloto: Number(cotizacion.totalCarroPiloto),
+      precioCotizado: this.toNumber(cotizacion.precioCotizado),
+      utilidadEsperada: this.toNumber(cotizacion.utilidadEsperada),
+      margenEsperado: this.toNumber(cotizacion.margenEsperado),
+      costoTotal: this.toNumber(cotizacion.costoTotal),
+      kmCargado: this.toNumber(cotizacion.kmCargado),
+      kmVacio: this.toNumber(cotizacion.kmVacio),
+      kmTotal: this.toNumber(cotizacion.kmTotal),
+      dieselEstimado: this.toNumber(cotizacion.dieselEstimado),
+      casetasEstimado: this.toNumber(cotizacion.casetasEstimado),
+      viaticosEstimado: this.toNumber(cotizacion.viaticosEstimado),
+      salarioEstimado: this.toNumber(cotizacion.salarioEstimado),
+      permisoEstimado: this.toNumber(cotizacion.permisoEstimado),
+      pesoCarga: cotizacion.pesoCarga ? this.toNumber(cotizacion.pesoCarga) : null,
+      porcentajeMantenimiento: this.toNumber(cotizacion.porcentajeMantenimiento),
+      montoMantenimiento: this.toNumber(cotizacion.montoMantenimiento),
+      porcentajeIndirectos: this.toNumber(cotizacion.porcentajeIndirectos),
+      montoIndirectos: this.toNumber(cotizacion.montoIndirectos),
+      casetasCargado: cotizacion.casetasCargado ? this.toNumber(cotizacion.casetasCargado) : null,
+      casetasVacio: cotizacion.casetasVacio ? this.toNumber(cotizacion.casetasVacio) : null,
+      comidasPrecioUnitario: cotizacion.comidasPrecioUnitario ? this.toNumber(cotizacion.comidasPrecioUnitario) : null,
+      federalPrecioUnitario: cotizacion.federalPrecioUnitario ? this.toNumber(cotizacion.federalPrecioUnitario) : null,
+      telefonoPrecioUnitario: cotizacion.telefonoPrecioUnitario ? this.toNumber(cotizacion.telefonoPrecioUnitario) : null,
+      imprevistosViaticos: cotizacion.imprevistosViaticos ? this.toNumber(cotizacion.imprevistosViaticos) : null,
+      costoBaseCarroPiloto: cotizacion.costoBaseCarroPiloto ? this.toNumber(cotizacion.costoBaseCarroPiloto) : null,
+      gasolinaCarroPiloto: cotizacion.gasolinaCarroPiloto ? this.toNumber(cotizacion.gasolinaCarroPiloto) : null,
+      casetasCarroPiloto: cotizacion.casetasCarroPiloto ? this.toNumber(cotizacion.casetasCarroPiloto) : null,
+      alimentacionCarroPiloto: cotizacion.alimentacionCarroPiloto ? this.toNumber(cotizacion.alimentacionCarroPiloto) : null,
+      imprevistosCarroPiloto: cotizacion.imprevistosCarroPiloto ? this.toNumber(cotizacion.imprevistosCarroPiloto) : null,
+      totalCarroPiloto: this.toNumber(cotizacion.totalCarroPiloto),
     };
   }
 
