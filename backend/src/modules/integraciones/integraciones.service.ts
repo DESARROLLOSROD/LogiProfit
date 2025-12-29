@@ -1,0 +1,361 @@
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { CreateConfiguracionMapeoDto } from './dto/create-configuracion-mapeo.dto';
+import { UpdateConfiguracionMapeoDto } from './dto/update-configuracion-mapeo.dto';
+import { ExportarFletesDto } from './dto/exportar-fletes.dto';
+import { TipoArchivo, TipoOperacion } from '@prisma/client';
+import { ExcelParser } from './parsers/excel.parser';
+import { CsvParser } from './parsers/csv.parser';
+import { XmlParser } from './parsers/xml.parser';
+import { ExcelExporter } from './exporters/excel.exporter';
+import { CsvExporter } from './exporters/csv.exporter';
+import { XmlExporter } from './exporters/xml.exporter';
+import { MapperService } from './mappers/mapper.service';
+import { ValidadorService, ValidationError } from './mappers/validador.service';
+import { FletesService } from '../fletes/fletes.service';
+
+export interface ResultadoImportacion {
+  logId: number;
+  totalRegistros: number;
+  exitosos: number;
+  actualizados: number;
+  errores: number;
+  detallesErrores: ValidationError[];
+}
+
+export interface PreviewResult {
+  totalRegistros: number;
+  headers: string[];
+  mapeoActual: any;
+  preview: Array<{
+    linea: number;
+    datosOriginales: any;
+    datosMapeados: any;
+  }>;
+}
+
+@Injectable()
+export class IntegracionesService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly excelParser: ExcelParser,
+    private readonly csvParser: CsvParser,
+    private readonly xmlParser: XmlParser,
+    private readonly excelExporter: ExcelExporter,
+    private readonly csvExporter: CsvExporter,
+    private readonly xmlExporter: XmlExporter,
+    private readonly mapperService: MapperService,
+    private readonly validadorService: ValidadorService,
+    private readonly fletesService: FletesService,
+  ) {}
+
+  // ==================== CONFIGURACIONES DE MAPEO ====================
+
+  async createConfiguracion(empresaId: number, dto: CreateConfiguracionMapeoDto) {
+    return this.prisma.configuracionMapeo.create({
+      data: {
+        empresaId,
+        nombre: dto.nombre,
+        descripcion: dto.descripcion,
+        sistema: dto.sistema,
+        tipoArchivo: dto.tipoArchivo,
+        activa: dto.activa !== undefined ? dto.activa : true,
+        mapeos: dto.mapeos as any,
+      },
+    });
+  }
+
+  async findAllConfiguraciones(empresaId: number) {
+    return this.prisma.configuracionMapeo.findMany({
+      where: { empresaId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findOneConfiguracion(id: number, empresaId: number) {
+    const config = await this.prisma.configuracionMapeo.findFirst({
+      where: { id, empresaId },
+    });
+
+    if (!config) {
+      throw new NotFoundException(`Configuración con ID ${id} no encontrada`);
+    }
+
+    return config;
+  }
+
+  async updateConfiguracion(
+    id: number,
+    empresaId: number,
+    dto: UpdateConfiguracionMapeoDto,
+  ) {
+    await this.findOneConfiguracion(id, empresaId);
+
+    return this.prisma.configuracionMapeo.update({
+      where: { id },
+      data: {
+        nombre: dto.nombre,
+        descripcion: dto.descripcion,
+        sistema: dto.sistema,
+        tipoArchivo: dto.tipoArchivo,
+        activa: dto.activa,
+        mapeos: dto.mapeos as any,
+      },
+    });
+  }
+
+  async deleteConfiguracion(id: number, empresaId: number) {
+    await this.findOneConfiguracion(id, empresaId);
+
+    return this.prisma.configuracionMapeo.delete({
+      where: { id },
+    });
+  }
+
+  // ==================== IMPORTACIÓN ====================
+
+  async preview(
+    file: Express.Multer.File,
+    configuracionMapeoId: number,
+    empresaId: number,
+  ): Promise<PreviewResult> {
+    // Obtener configuración
+    const config = await this.findOneConfiguracion(configuracionMapeoId, empresaId);
+
+    // Parsear archivo
+    const parser = this.getParser(config.tipoArchivo);
+    const { headers, rows } = await this.parseFile(parser, file.buffer);
+
+    // Mostrar solo primeras 10 filas
+    const preview = await Promise.all(
+      rows.slice(0, 10).map(async (row: any, i: number) => {
+        const dto = await this.mapperService.mapToFlete(row, config, empresaId);
+        return {
+          linea: i + 2, // +2 porque línea 1 es header
+          datosOriginales: row,
+          datosMapeados: dto,
+        };
+      }),
+    );
+
+    return {
+      totalRegistros: rows.length,
+      headers,
+      mapeoActual: config.mapeos,
+      preview,
+    };
+  }
+
+  async importar(
+    file: Express.Multer.File,
+    configuracionMapeoId: number,
+    empresaId: number,
+    usuarioId: number,
+  ): Promise<ResultadoImportacion> {
+    // Obtener configuración
+    const config = await this.findOneConfiguracion(configuracionMapeoId, empresaId);
+
+    // Parsear archivo
+    const parser = this.getParser(config.tipoArchivo);
+    const { rows } = await this.parseFile(parser, file.buffer);
+
+    const errores: ValidationError[] = [];
+    let exitosos = 0;
+    let actualizados = 0;
+
+    // Procesar cada fila
+    for (let i = 0; i < rows.length; i++) {
+      const linea = i + 2; // +2 porque línea 1 es header
+
+      try {
+        // Mapear fila a DTO
+        const dto = await this.mapperService.mapToFlete(rows[i], config, empresaId);
+
+        // Validar DTO
+        const validacion = await this.validadorService.validarFlete(dto, linea, empresaId);
+
+        if (!validacion.valido) {
+          errores.push(...validacion.errores);
+          continue;
+        }
+
+        // Verificar si existe un flete con ese folio
+        const folioExiste = dto.folio
+          ? await this.prisma.flete.findFirst({
+              where: { empresaId, folio: dto.folio },
+            })
+          : null;
+
+        if (folioExiste) {
+          // Actualizar flete existente
+          await this.prisma.flete.update({
+            where: { id: folioExiste.id },
+            data: {
+              origen: dto.origen,
+              destino: dto.destino,
+              precioCliente: dto.precioCliente,
+              kmReales: dto.kmReales,
+              fechaInicio: dto.fechaInicio,
+              fechaFin: dto.fechaFin,
+              notas: dto.notas,
+              clienteId: dto.clienteId,
+            },
+          });
+          actualizados++;
+        } else {
+          // Crear nuevo flete
+          await this.fletesService.create(empresaId, dto as any);
+          exitosos++;
+        }
+      } catch (error) {
+        errores.push({
+          linea,
+          campo: 'general',
+          error: error.message || 'Error desconocido',
+        });
+      }
+    }
+
+    // Registrar log de importación
+    const log = await this.prisma.importacionLog.create({
+      data: {
+        empresaId,
+        usuarioId,
+        configuracionMapeoId,
+        nombreArchivo: file.originalname,
+        tipoOperacion: TipoOperacion.IMPORTACION,
+        formato: config.tipoArchivo,
+        totalRegistros: rows.length,
+        registrosExitosos: exitosos,
+        registrosActualizados: actualizados,
+        registrosErrores: errores.length,
+        detallesErrores: errores as any,
+      },
+    });
+
+    return {
+      logId: log.id,
+      totalRegistros: rows.length,
+      exitosos,
+      actualizados,
+      errores: errores.length,
+      detallesErrores: errores,
+    };
+  }
+
+  // ==================== EXPORTACIÓN ====================
+
+  async exportar(
+    dto: ExportarFletesDto,
+    empresaId: number,
+    usuarioId: number,
+  ): Promise<Buffer> {
+    // Obtener configuración
+    const config = await this.findOneConfiguracion(dto.configuracionMapeoId, empresaId);
+
+    // Obtener fletes según filtros
+    const fletes = await this.fletesService.findAll(empresaId, {
+      estado: dto.estado,
+      clienteId: dto.clienteId,
+      fechaDesde: dto.fechaDesde,
+      fechaHasta: dto.fechaHasta,
+    });
+
+    // Filtrar por IDs si se especificaron
+    const fletesAExportar = dto.fleteIds
+      ? fletes.filter((f) => dto.fleteIds.includes(f.id))
+      : fletes;
+
+    // Obtener exporter según formato
+    const exporter = this.getExporter(dto.formato);
+    const buffer = exporter.export(fletesAExportar, config);
+
+    // Registrar log de exportación
+    await this.prisma.importacionLog.create({
+      data: {
+        empresaId,
+        usuarioId,
+        configuracionMapeoId: dto.configuracionMapeoId,
+        nombreArchivo: `export_${new Date().getTime()}.${dto.formato.toLowerCase()}`,
+        tipoOperacion: TipoOperacion.EXPORTACION,
+        formato: dto.formato,
+        totalRegistros: fletesAExportar.length,
+        registrosExitosos: fletesAExportar.length,
+        registrosActualizados: 0,
+        registrosErrores: 0,
+      },
+    });
+
+    return buffer;
+  }
+
+  // ==================== LOGS ====================
+
+  async findAllLogs(empresaId: number) {
+    return this.prisma.importacionLog.findMany({
+      where: { empresaId },
+      include: {
+        configuracionMapeo: {
+          select: {
+            id: true,
+            nombre: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findOneLog(id: number, empresaId: number) {
+    const log = await this.prisma.importacionLog.findFirst({
+      where: { id, empresaId },
+      include: {
+        configuracionMapeo: true,
+      },
+    });
+
+    if (!log) {
+      throw new NotFoundException(`Log con ID ${id} no encontrado`);
+    }
+
+    return log;
+  }
+
+  // ==================== HELPERS PRIVADOS ====================
+
+  private getParser(tipo: TipoArchivo) {
+    switch (tipo) {
+      case TipoArchivo.EXCEL:
+        return this.excelParser;
+      case TipoArchivo.CSV:
+        return this.csvParser;
+      case TipoArchivo.XML:
+        return this.xmlParser;
+      default:
+        throw new BadRequestException(`Tipo de archivo no soportado: ${tipo}`);
+    }
+  }
+
+  private async parseFile(parser: any, buffer: Buffer) {
+    try {
+      return await parser.parse(buffer);
+    } catch (error) {
+      throw new BadRequestException(
+        `Error al parsear archivo: ${error.message}`,
+      );
+    }
+  }
+
+  private getExporter(tipo: TipoArchivo) {
+    switch (tipo) {
+      case TipoArchivo.EXCEL:
+        return this.excelExporter;
+      case TipoArchivo.CSV:
+        return this.csvExporter;
+      case TipoArchivo.XML:
+        return this.xmlExporter;
+      default:
+        throw new BadRequestException(`Tipo de archivo no soportado: ${tipo}`);
+    }
+  }
+}

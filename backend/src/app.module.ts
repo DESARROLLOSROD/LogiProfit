@@ -15,6 +15,7 @@ import { GastosModule } from './modules/gastos/gastos.module';
 import { ReportesModule } from './modules/reportes/reportes.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MantenimientoModule } from './modules/mantenimiento/mantenimiento.module';
+import { IntegracionesModule } from './modules/integraciones/integraciones.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { MantenimientoModule } from './modules/mantenimiento/mantenimiento.modul
     ReportesModule,
     NotificationsModule,
     MantenimientoModule,
+    IntegracionesModule,
   ],
   providers: [
     {

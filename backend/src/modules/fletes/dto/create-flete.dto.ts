@@ -28,10 +28,26 @@ export class CreateFleteDto {
   precioCliente: number;
 
   @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  folio?: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  kmReales?: number;
+
+  @ApiProperty({ required: false })
   @IsDate()
   @Type(() => Date)
   @IsOptional()
   fechaInicio?: Date;
+
+  @ApiProperty({ required: false })
+  @IsDate()
+  @Type(() => Date)
+  @IsOptional()
+  fechaFin?: Date;
 
   @ApiProperty({ required: false })
   @IsString()

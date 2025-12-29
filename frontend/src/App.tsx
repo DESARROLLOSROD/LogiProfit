@@ -24,6 +24,9 @@ import Clientes from './pages/clientes/Clientes'
 import Reportes from './pages/reportes/Reportes'
 import Configuracion from './pages/Configuracion'
 import Usuarios from './pages/usuarios/Usuarios'
+import Integraciones from './pages/integraciones/Integraciones'
+import NuevaConfiguracion from './pages/integraciones/NuevaConfiguracion'
+import ImportarArchivo from './pages/integraciones/ImportarArchivo'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
@@ -99,6 +102,12 @@ export default function App() {
 
         {/* Reportes */}
         <Route path="/reportes" element={<Reportes />} />
+
+        {/* Integraciones */}
+        <Route path="/integraciones" element={<Integraciones />} />
+        <Route path="/integraciones/nueva" element={<NuevaConfiguracion />} />
+        <Route path="/integraciones/editar/:id" element={<NuevaConfiguracion />} />
+        <Route path="/integraciones/importar" element={<ImportarArchivo />} />
 
         {/* Configuración */}
         <Route path="/configuracion" element={<Configuracion />} />

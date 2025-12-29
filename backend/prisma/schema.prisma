@@ -22,12 +22,14 @@ model Empresa {
   updatedAt DateTime @updatedAt
 
   // Relaciones
-  usuarios     Usuario[]
-  clientes     Cliente[]
-  camiones     Camion[]
-  choferes     Chofer[]
-  cotizaciones Cotizacion[]
-  fletes       Flete[]
+  usuarios             Usuario[]
+  clientes             Cliente[]
+  camiones             Camion[]
+  choferes             Chofer[]
+  cotizaciones         Cotizacion[]
+  fletes               Flete[]
+  configuracionesMapeo ConfiguracionMapeo[]
+  importacionesLog     ImportacionLog[]
 
   @@map("empresas")
 }
@@ -504,4 +506,65 @@ enum EstadoMantenimiento {
   EN_PROCESO
   COMPLETADO
   CANCELADO
+}
+
+// ==================== INTEGRACIONES EXTERNAS ====================
+
+model ConfiguracionMapeo {
+  id              Int             @id @default(autoincrement())
+  empresaId       Int
+  nombre          String
+  descripcion     String?
+  sistema         SistemaExterno
+  tipoArchivo     TipoArchivo
+  activa          Boolean         @default(true)
+  mapeos          Json            // { "folio": "COL_A", "clienteNombre": "COL_B", ... }
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  empresa         Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  importaciones   ImportacionLog[]
+
+  @@index([empresaId])
+  @@map("configuraciones_mapeo")
+}
+
+model ImportacionLog {
+  id                      Int                  @id @default(autoincrement())
+  empresaId               Int
+  usuarioId               Int?
+  configuracionMapeoId    Int?
+  nombreArchivo           String
+  tipoOperacion           TipoOperacion
+  formato                 TipoArchivo
+  totalRegistros          Int
+  registrosExitosos       Int
+  registrosActualizados   Int
+  registrosErrores        Int
+  detallesErrores         Json?
+  createdAt               DateTime             @default(now())
+
+  empresa                 Empresa              @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  configuracionMapeo      ConfiguracionMapeo?  @relation(fields: [configuracionMapeoId], references: [id])
+
+  @@index([empresaId])
+  @@index([createdAt])
+  @@map("importaciones_log")
+}
+
+enum SistemaExterno {
+  ASPEL
+  MICROSIP
+  OTRO
+}
+
+enum TipoArchivo {
+  EXCEL
+  CSV
+  XML
+}
+
+enum TipoOperacion {
+  IMPORTACION
+  EXPORTACION
 }
