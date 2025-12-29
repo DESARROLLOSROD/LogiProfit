@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { EmpresasModule } from './modules/empresas/empresas.module';
@@ -20,6 +22,11 @@ import { MantenimientoModule } from './modules/mantenimiento/mantenimiento.modul
       isGlobal: true,
       envFilePath: '.env',
     }),
+    // Rate limiting global: 10 requests por minuto
+    ThrottlerModule.forRoot([{
+      ttl: 60000,  // 60 segundos
+      limit: 10,    // 10 requests máximo
+    }]),
     PrismaModule,
     AuthModule,
     EmpresasModule,
@@ -33,6 +40,12 @@ import { MantenimientoModule } from './modules/mantenimiento/mantenimiento.modul
     ReportesModule,
     NotificationsModule,
     MantenimientoModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

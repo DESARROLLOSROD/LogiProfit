@@ -80,14 +80,24 @@ export default function Register() {
               type="password"
               className="input"
               placeholder="••••••••"
-              {...register('password', { 
+              {...register('password', {
                 required: 'La contraseña es requerida',
-                minLength: { value: 6, message: 'Mínimo 6 caracteres' }
+                minLength: {
+                  value: 8,
+                  message: 'Mínimo 8 caracteres'
+                },
+                pattern: {
+                  value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]/,
+                  message: 'Debe contener mayúsculas, minúsculas, números y símbolos (@$!%*?&#)'
+                }
               })}
             />
             {errors.password && (
               <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
             )}
+            <p className="text-xs text-gray-500 mt-1">
+              Mínimo 8 caracteres con mayúsculas, minúsculas, números y símbolos
+            </p>
           </div>
 
           <div>

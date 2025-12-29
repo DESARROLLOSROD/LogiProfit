@@ -52,6 +52,8 @@ model Usuario {
   empresa  Empresa               @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   permisos UsuarioPermiso[]
 
+  @@index([empresaId])
+  @@index([email])
   @@map("usuarios")
 }
 
@@ -183,6 +185,9 @@ model Cotizacion {
   cliente  Cliente  @relation(fields: [clienteId], references: [id])
   fletes   Flete[]
 
+  @@index([empresaId, estado])
+  @@index([clienteId])
+  @@index([createdAt])
   @@map("cotizaciones")
 }
 
@@ -225,6 +230,10 @@ model Flete {
   choferes     FleteChofer[]
   gastos       Gasto[]
 
+  @@index([empresaId, estado])
+  @@index([clienteId])
+  @@index([fechaInicio])
+  @@index([createdAt])
   @@map("fletes")
 }
 
@@ -380,6 +389,9 @@ model Gasto {
   camion    Camion?          @relation(fields: [camionId], references: [id])
   categoria CategoriaGasto?  @relation(fields: [categoriaId], references: [id])
 
+  @@index([fleteId])
+  @@index([categoriaId])
+  @@index([fecha])
   @@map("gastos")
 }
 
@@ -447,6 +459,8 @@ model Mantenimiento {
 
   camion Camion @relation(fields: [camionId], references: [id], onDelete: Cascade)
 
+  @@index([camionId, estado])
+  @@index([fechaProgramada])
   @@map("mantenimientos")
 }
 
