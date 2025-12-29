@@ -332,7 +332,7 @@ export class CotizacionesService {
   }
 
   async findAll(empresaId: number, estado?: EstadoCotizacion) {
-    return this.prisma.cotizacion.findMany({
+    const cotizaciones = await this.prisma.cotizacion.findMany({
       where: {
         empresaId,
         ...(estado && { estado }),
@@ -340,6 +340,23 @@ export class CotizacionesService {
       include: { cliente: true },
       orderBy: { createdAt: 'desc' },
     });
+
+    // Convertir campos Decimal a números para el frontend
+    return cotizaciones.map(cot => ({
+      ...cot,
+      precioCotizado: Number(cot.precioCotizado),
+      utilidadEsperada: Number(cot.utilidadEsperada),
+      margenEsperado: Number(cot.margenEsperado),
+      costoTotal: Number(cot.costoTotal),
+      kmCargado: Number(cot.kmCargado),
+      kmVacio: Number(cot.kmVacio),
+      kmTotal: Number(cot.kmTotal),
+      dieselEstimado: Number(cot.dieselEstimado),
+      casetasEstimado: Number(cot.casetasEstimado),
+      viaticosEstimado: Number(cot.viaticosEstimado),
+      salarioEstimado: Number(cot.salarioEstimado),
+      permisoEstimado: Number(cot.permisoEstimado),
+    }));
   }
 
   async findOne(id: number, empresaId: number) {
@@ -352,7 +369,39 @@ export class CotizacionesService {
       throw new NotFoundException(`Cotización con ID ${id} no encontrada`);
     }
 
-    return cotizacion;
+    // Convertir campos Decimal a números para el frontend
+    return {
+      ...cotizacion,
+      precioCotizado: Number(cotizacion.precioCotizado),
+      utilidadEsperada: Number(cotizacion.utilidadEsperada),
+      margenEsperado: Number(cotizacion.margenEsperado),
+      costoTotal: Number(cotizacion.costoTotal),
+      kmCargado: Number(cotizacion.kmCargado),
+      kmVacio: Number(cotizacion.kmVacio),
+      kmTotal: Number(cotizacion.kmTotal),
+      dieselEstimado: Number(cotizacion.dieselEstimado),
+      casetasEstimado: Number(cotizacion.casetasEstimado),
+      viaticosEstimado: Number(cotizacion.viaticosEstimado),
+      salarioEstimado: Number(cotizacion.salarioEstimado),
+      permisoEstimado: Number(cotizacion.permisoEstimado),
+      pesoCarga: cotizacion.pesoCarga ? Number(cotizacion.pesoCarga) : null,
+      porcentajeMantenimiento: Number(cotizacion.porcentajeMantenimiento),
+      montoMantenimiento: Number(cotizacion.montoMantenimiento),
+      porcentajeIndirectos: Number(cotizacion.porcentajeIndirectos),
+      montoIndirectos: Number(cotizacion.montoIndirectos),
+      casetasCargado: cotizacion.casetasCargado ? Number(cotizacion.casetasCargado) : null,
+      casetasVacio: cotizacion.casetasVacio ? Number(cotizacion.casetasVacio) : null,
+      comidasPrecioUnitario: cotizacion.comidasPrecioUnitario ? Number(cotizacion.comidasPrecioUnitario) : null,
+      federalPrecioUnitario: cotizacion.federalPrecioUnitario ? Number(cotizacion.federalPrecioUnitario) : null,
+      telefonoPrecioUnitario: cotizacion.telefonoPrecioUnitario ? Number(cotizacion.telefonoPrecioUnitario) : null,
+      imprevistosViaticos: cotizacion.imprevistosViaticos ? Number(cotizacion.imprevistosViaticos) : null,
+      costoBaseCarroPiloto: cotizacion.costoBaseCarroPiloto ? Number(cotizacion.costoBaseCarroPiloto) : null,
+      gasolinaCarroPiloto: cotizacion.gasolinaCarroPiloto ? Number(cotizacion.gasolinaCarroPiloto) : null,
+      casetasCarroPiloto: cotizacion.casetasCarroPiloto ? Number(cotizacion.casetasCarroPiloto) : null,
+      alimentacionCarroPiloto: cotizacion.alimentacionCarroPiloto ? Number(cotizacion.alimentacionCarroPiloto) : null,
+      imprevistosCarroPiloto: cotizacion.imprevistosCarroPiloto ? Number(cotizacion.imprevistosCarroPiloto) : null,
+      totalCarroPiloto: Number(cotizacion.totalCarroPiloto),
+    };
   }
 
   async update(id: number, empresaId: number, dto: UpdateCotizacionDto) {

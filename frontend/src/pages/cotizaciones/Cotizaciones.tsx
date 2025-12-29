@@ -51,16 +51,8 @@ export default function Cotizaciones() {
     const fetchCotizaciones = async () => {
       try {
         const response = await api.get('/cotizaciones')
-
-        // Convertir campos Decimal de Prisma (vienen como strings) a números
-        const cotizacionesConvertidas = response.data.map((cot: any) => ({
-          ...cot,
-          precioCotizado: Number(cot.precioCotizado) || 0,
-          utilidadEsperada: Number(cot.utilidadEsperada) || 0,
-          margenEsperado: Number(cot.margenEsperado) || 0,
-        }))
-
-        setCotizaciones(cotizacionesConvertidas)
+        // El backend ya convierte campos Decimal a números
+        setCotizaciones(response.data)
       } catch (error) {
         console.error('Error:', error)
       } finally {
