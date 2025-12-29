@@ -5,12 +5,25 @@ import {
   BanknotesIcon,
   DocumentTextIcon,
   ChevronDownIcon,
-  ChevronUpIcon
+  ChevronUpIcon,
+  PlusIcon,
+  PencilIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { generarPDFCotizacion } from '../../lib/pdfGenerator'
 import Breadcrumbs from '../../components/Breadcrumbs'
+
+interface Concepto {
+  id: number
+  descripcion: string
+  cantidad: number
+  unidad: string
+  precioUnit: number
+  subtotal: number
+  orden: number
+}
 
 interface Cotizacion {
   id: number
@@ -31,45 +44,6 @@ interface Cotizacion {
   kmVacio?: number
   kmTotal: number
 
-  // Costos de combustible
-  costoDieselCargado: number
-  costoDieselVacio: number
-  costoDieselTotal: number
-
-  // Casetas
-  casetasCargado?: number
-  casetasVacio?: number
-  costoCasetasTotal: number
-
-  // Viáticos detallados
-  diasViaje: number
-  viaticosAlimentos?: number
-  viaticosHospedaje?: number
-  viaticosExtras?: number
-  costoViaticosTotal: number
-
-  // Salario
-  salarioChofer: number
-
-  // Permiso SCT
-  permisoSCT?: number
-
-  // Subtotal operativo
-  subtotalOperativo: number
-
-  // Costos porcentuales
-  porcentajeMantenimiento: number
-  costoMantenimiento: number
-  porcentajeIndirectos: number
-  costoIndirectos: number
-
-  // Carro piloto
-  requiereCarroPiloto: boolean
-  diasCarroPiloto?: number
-  costoBaseCarroPiloto?: number
-  costoGasolinaCarroPiloto?: number
-  costoCarroPilotoTotal?: number
-
   // Totales
   costoTotal: number
   precioCotizado: number
@@ -79,6 +53,7 @@ interface Cotizacion {
   estado: string
   notas?: string
   createdAt: string
+  conceptos?: Concepto[]
 }
 
 export default function CotizacionDetalle() {
@@ -86,15 +61,18 @@ export default function CotizacionDetalle() {
   const navigate = useNavigate()
   const [cotizacion, setCotizacion] = useState<Cotizacion | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showDetails, setShowDetails] = useState({
-    diesel: false,
-    casetas: false,
-    viaticos: false,
-    porcentuales: false,
-    carroPiloto: false,
-  })
   const [showEstadoModal, setShowEstadoModal] = useState(false)
   const [nuevoEstado, setNuevoEstado] = useState('')
+
+  // Conceptos state
+  const [showConceptoModal, setShowConceptoModal] = useState(false)
+  const [editingConcepto, setEditingConcepto] = useState<Concepto | null>(null)
+  const [conceptoForm, setConceptoForm] = useState({
+    descripcion: '',
+    cantidad: 0,
+    unidad: '',
+    precioUnit: 0,
+  })
 
   useEffect(() => {
     fetchCotizacion()
@@ -113,44 +91,6 @@ export default function CotizacionDetalle() {
         kmVacio: Number(data.kmVacio) || 0,
         kmTotal: Number(data.kmTotal) || 0,
 
-        // Costos de combustible
-        costoDieselCargado: Number(data.costoDieselCargado) || 0,
-        costoDieselVacio: Number(data.costoDieselVacio) || 0,
-        costoDieselTotal: Number(data.costoDieselTotal) || 0,
-
-        // Casetas
-        casetasCargado: Number(data.casetasCargado) || 0,
-        casetasVacio: Number(data.casetasVacio) || 0,
-        costoCasetasTotal: Number(data.costoCasetasTotal) || 0,
-
-        // Viáticos
-        diasViaje: Number(data.diasViaje) || 0,
-        viaticosAlimentos: Number(data.viaticosAlimentos) || 0,
-        viaticosHospedaje: Number(data.viaticosHospedaje) || 0,
-        viaticosExtras: Number(data.viaticosExtras) || 0,
-        costoViaticosTotal: Number(data.costoViaticosTotal) || 0,
-
-        // Salario
-        salarioChofer: Number(data.salarioChofer) || 0,
-
-        // Permiso SCT
-        permisoSCT: Number(data.permisoSCT) || 0,
-
-        // Subtotal operativo
-        subtotalOperativo: Number(data.subtotalOperativo) || 0,
-
-        // Costos porcentuales
-        porcentajeMantenimiento: Number(data.porcentajeMantenimiento) || 0,
-        costoMantenimiento: Number(data.costoMantenimiento) || 0,
-        porcentajeIndirectos: Number(data.porcentajeIndirectos) || 0,
-        costoIndirectos: Number(data.costoIndirectos) || 0,
-
-        // Carro piloto
-        diasCarroPiloto: Number(data.diasCarroPiloto) || 0,
-        costoBaseCarroPiloto: Number(data.costoBaseCarroPiloto) || 0,
-        costoGasolinaCarroPiloto: Number(data.costoGasolinaCarroPiloto) || 0,
-        costoCarroPilotoTotal: Number(data.costoCarroPilotoTotal) || 0,
-
         // Totales
         costoTotal: Number(data.costoTotal) || 0,
         precioCotizado: Number(data.precioCotizado) || 0,
@@ -159,9 +99,14 @@ export default function CotizacionDetalle() {
 
         // Información de carga
         pesoCarga: Number(data.pesoCarga) || 0,
-        largo: Number(data.largo) || 0,
-        ancho: Number(data.ancho) || 0,
-        alto: Number(data.alto) || 0,
+
+        // Conceptos
+        conceptos: data.conceptos?.map((c: any) => ({
+          ...c,
+          cantidad: Number(c.cantidad) || 0,
+          precioUnit: Number(c.precioUnit) || 0,
+          subtotal: Number(c.subtotal) || 0,
+        })) || [],
       }
 
       setCotizacion(cotizacionConvertida)
@@ -203,8 +148,70 @@ export default function CotizacionDetalle() {
     return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount)
   }
 
-  const toggleSection = (section: keyof typeof showDetails) => {
-    setShowDetails(prev => ({ ...prev, [section]: !prev[section] }))
+  // Conceptos functions
+  const openConceptoModal = (concepto?: Concepto) => {
+    if (concepto) {
+      setEditingConcepto(concepto)
+      setConceptoForm({
+        descripcion: concepto.descripcion,
+        cantidad: concepto.cantidad,
+        unidad: concepto.unidad,
+        precioUnit: concepto.precioUnit,
+      })
+    } else {
+      setEditingConcepto(null)
+      setConceptoForm({
+        descripcion: '',
+        cantidad: 0,
+        unidad: '',
+        precioUnit: 0,
+      })
+    }
+    setShowConceptoModal(true)
+  }
+
+  const closeConceptoModal = () => {
+    setShowConceptoModal(false)
+    setEditingConcepto(null)
+    setConceptoForm({
+      descripcion: '',
+      cantidad: 0,
+      unidad: '',
+      precioUnit: 0,
+    })
+  }
+
+  const saveConcepto = async () => {
+    if (!conceptoForm.descripcion || !conceptoForm.unidad || conceptoForm.cantidad <= 0 || conceptoForm.precioUnit <= 0) {
+      toast.error('Completa todos los campos correctamente')
+      return
+    }
+
+    try {
+      if (editingConcepto) {
+        await api.patch(`/cotizaciones/${id}/conceptos/${editingConcepto.id}`, conceptoForm)
+        toast.success('Concepto actualizado')
+      } else {
+        await api.post(`/cotizaciones/${id}/conceptos`, conceptoForm)
+        toast.success('Concepto agregado')
+      }
+      closeConceptoModal()
+      fetchCotizacion()
+    } catch {
+      // Error handled by interceptor
+    }
+  }
+
+  const deleteConcepto = async (conceptoId: number) => {
+    if (!confirm('¿Eliminar este concepto?')) return
+
+    try {
+      await api.delete(`/cotizaciones/${id}/conceptos/${conceptoId}`)
+      toast.success('Concepto eliminado')
+      fetchCotizacion()
+    } catch {
+      // Error handled by interceptor
+    }
   }
 
   const exportarPDF = () => {
@@ -311,10 +318,6 @@ export default function CotizacionDetalle() {
               <p className="text-sm text-gray-500">Km Total</p>
               <p className="font-medium text-primary-600">{cotizacion.kmTotal} km</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Días de Viaje</p>
-              <p className="font-medium">{cotizacion.diasViaje} días</p>
-            </div>
             {cotizacion.tipoCarga && (
               <>
                 <div>
@@ -372,240 +375,85 @@ export default function CotizacionDetalle() {
         </div>
       </div>
 
-      {/* Desglose de Costos */}
+      {/* Conceptos / Servicios */}
       <div className="card mt-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <BanknotesIcon className="w-5 h-5 text-primary-600" />
-          Desglose Detallado de Costos
-        </h3>
-
-        <div className="space-y-3">
-          {/* 1. Diesel */}
-          <div className="border rounded-lg">
-            <button
-              onClick={() => toggleSection('diesel')}
-              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50"
-            >
-              <div className="flex items-center gap-3">
-                <span className="font-medium">1. Combustible (Diesel)</span>
-                <span className="text-sm text-gray-500">
-                  {((cotizacion.costoDieselTotal / cotizacion.costoTotal) * 100).toFixed(1)}%
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-semibold text-gray-900">
-                  {formatMoney(cotizacion.costoDieselTotal)}
-                </span>
-                {showDetails.diesel ?
-                  <ChevronUpIcon className="w-5 h-5 text-gray-400" /> :
-                  <ChevronDownIcon className="w-5 h-5 text-gray-400" />
-                }
-              </div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <BanknotesIcon className="w-5 h-5 text-primary-600" />
+            Conceptos y Servicios
+          </h3>
+          {cotizacion.estado !== 'CONVERTIDA' && cotizacion.estado !== 'CANCELADA' && (
+            <button onClick={() => openConceptoModal()} className="btn-primary flex items-center gap-2">
+              <PlusIcon className="w-4 h-4" />
+              Agregar Concepto
             </button>
-            {showDetails.diesel && (
-              <div className="px-4 pb-3 pt-2 bg-gray-50 border-t space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Diesel cargado ({cotizacion.kmCargado} km)</span>
-                  <span>{formatMoney(cotizacion.costoDieselCargado)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Diesel vacío ({cotizacion.kmVacio || 0} km)</span>
-                  <span>{formatMoney(cotizacion.costoDieselVacio)}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 2. Casetas */}
-          <div className="border rounded-lg">
-            <button
-              onClick={() => toggleSection('casetas')}
-              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50"
-            >
-              <div className="flex items-center gap-3">
-                <span className="font-medium">2. Casetas</span>
-                <span className="text-sm text-gray-500">
-                  {((cotizacion.costoCasetasTotal / cotizacion.costoTotal) * 100).toFixed(1)}%
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-semibold text-gray-900">
-                  {formatMoney(cotizacion.costoCasetasTotal)}
-                </span>
-                {showDetails.casetas ?
-                  <ChevronUpIcon className="w-5 h-5 text-gray-400" /> :
-                  <ChevronDownIcon className="w-5 h-5 text-gray-400" />
-                }
-              </div>
-            </button>
-            {showDetails.casetas && cotizacion.casetasCargado !== undefined && (
-              <div className="px-4 pb-3 pt-2 bg-gray-50 border-t space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Casetas cargado</span>
-                  <span>{formatMoney(cotizacion.casetasCargado)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Casetas vacío</span>
-                  <span>{formatMoney(cotizacion.casetasVacio || 0)}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 3. Viáticos */}
-          <div className="border rounded-lg">
-            <button
-              onClick={() => toggleSection('viaticos')}
-              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50"
-            >
-              <div className="flex items-center gap-3">
-                <span className="font-medium">3. Viáticos ({cotizacion.diasViaje} días)</span>
-                <span className="text-sm text-gray-500">
-                  {((cotizacion.costoViaticosTotal / cotizacion.costoTotal) * 100).toFixed(1)}%
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-semibold text-gray-900">
-                  {formatMoney(cotizacion.costoViaticosTotal)}
-                </span>
-                {showDetails.viaticos ?
-                  <ChevronUpIcon className="w-5 h-5 text-gray-400" /> :
-                  <ChevronDownIcon className="w-5 h-5 text-gray-400" />
-                }
-              </div>
-            </button>
-            {showDetails.viaticos && (
-              <div className="px-4 pb-3 pt-2 bg-gray-50 border-t space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Alimentos</span>
-                  <span>{formatMoney(cotizacion.viaticosAlimentos || 0)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Hospedaje</span>
-                  <span>{formatMoney(cotizacion.viaticosHospedaje || 0)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Extras</span>
-                  <span>{formatMoney(cotizacion.viaticosExtras || 0)}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 4. Salario */}
-          <div className="px-4 py-3 border rounded-lg flex items-center justify-between bg-white">
-            <div className="flex items-center gap-3">
-              <span className="font-medium">4. Salario del Chofer</span>
-              <span className="text-sm text-gray-500">
-                {((cotizacion.salarioChofer / cotizacion.costoTotal) * 100).toFixed(1)}%
-              </span>
-            </div>
-            <span className="font-semibold text-gray-900">
-              {formatMoney(cotizacion.salarioChofer)}
-            </span>
-          </div>
-
-          {/* 5. Permiso SCT */}
-          {cotizacion.permisoSCT && cotizacion.permisoSCT > 0 && (
-            <div className="px-4 py-3 border rounded-lg flex items-center justify-between bg-white">
-              <div className="flex items-center gap-3">
-                <span className="font-medium">5. Permiso SCT</span>
-                <span className="text-sm text-gray-500">
-                  {((cotizacion.permisoSCT / cotizacion.costoTotal) * 100).toFixed(1)}%
-                </span>
-              </div>
-              <span className="font-semibold text-gray-900">
-                {formatMoney(cotizacion.permisoSCT)}
-              </span>
-            </div>
-          )}
-
-          {/* Subtotal Operativo */}
-          <div className="px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-lg flex items-center justify-between">
-            <span className="font-semibold text-blue-900">Subtotal Operativo</span>
-            <span className="font-bold text-blue-900">
-              {formatMoney(cotizacion.subtotalOperativo)}
-            </span>
-          </div>
-
-          {/* 6. Costos Porcentuales */}
-          <div className="border rounded-lg">
-            <button
-              onClick={() => toggleSection('porcentuales')}
-              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50"
-            >
-              <div className="flex items-center gap-3">
-                <span className="font-medium">6. Costos Porcentuales</span>
-                <span className="text-sm text-gray-500">
-                  {(((cotizacion.costoMantenimiento + cotizacion.costoIndirectos) / cotizacion.costoTotal) * 100).toFixed(1)}%
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-semibold text-gray-900">
-                  {formatMoney(cotizacion.costoMantenimiento + cotizacion.costoIndirectos)}
-                </span>
-                {showDetails.porcentuales ?
-                  <ChevronUpIcon className="w-5 h-5 text-gray-400" /> :
-                  <ChevronDownIcon className="w-5 h-5 text-gray-400" />
-                }
-              </div>
-            </button>
-            {showDetails.porcentuales && (
-              <div className="px-4 pb-3 pt-2 bg-gray-50 border-t space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">
-                    Mantenimiento ({cotizacion.porcentajeMantenimiento}% del subtotal)
-                  </span>
-                  <span>{formatMoney(cotizacion.costoMantenimiento)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">
-                    Costos Indirectos ({cotizacion.porcentajeIndirectos}% del subtotal)
-                  </span>
-                  <span>{formatMoney(cotizacion.costoIndirectos)}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 7. Carro Piloto */}
-          {cotizacion.requiereCarroPiloto && (
-            <div className="border-2 border-yellow-300 rounded-lg">
-              <button
-                onClick={() => toggleSection('carroPiloto')}
-                className="w-full px-4 py-3 flex items-center justify-between hover:bg-yellow-50"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-medium text-yellow-900">7. Carro Piloto ({cotizacion.diasCarroPiloto} días)</span>
-                  <span className="text-sm text-yellow-700">
-                    {((cotizacion.costoCarroPilotoTotal || 0) / cotizacion.costoTotal * 100).toFixed(1)}%
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold text-yellow-900">
-                    {formatMoney(cotizacion.costoCarroPilotoTotal || 0)}
-                  </span>
-                  {showDetails.carroPiloto ?
-                    <ChevronUpIcon className="w-5 h-5 text-yellow-600" /> :
-                    <ChevronDownIcon className="w-5 h-5 text-yellow-600" />
-                  }
-                </div>
-              </button>
-              {showDetails.carroPiloto && (
-                <div className="px-4 pb-3 pt-2 bg-yellow-50 border-t border-yellow-300 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">Costo base</span>
-                    <span>{formatMoney(cotizacion.costoBaseCarroPiloto || 0)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">Gasolina ({cotizacion.diasCarroPiloto} días)</span>
-                    <span>{formatMoney(cotizacion.costoGasolinaCarroPiloto || 0)}</span>
-                  </div>
-                </div>
-              )}
-            </div>
           )}
         </div>
+
+        {cotizacion.conceptos && cotizacion.conceptos.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servicio</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Cantidad</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unidad</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Precio Unit.</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Subtotal</th>
+                  {cotizacion.estado !== 'CONVERTIDA' && cotizacion.estado !== 'CANCELADA' && (
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {cotizacion.conceptos.map((concepto) => (
+                  <tr key={concepto.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{concepto.descripcion}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 text-right">{concepto.cantidad.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{concepto.unidad}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 text-right">{formatMoney(concepto.precioUnit)}</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right">{formatMoney(concepto.subtotal)}</td>
+                    {cotizacion.estado !== 'CONVERTIDA' && cotizacion.estado !== 'CANCELADA' && (
+                      <td className="px-4 py-3 text-sm text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => openConceptoModal(concepto)}
+                            className="text-primary-600 hover:text-primary-900"
+                          >
+                            <PencilIcon className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteConcepto(concepto.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="bg-gray-50">
+                <tr>
+                  <td colSpan={4} className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    Total Conceptos:
+                  </td>
+                  <td className="px-4 py-3 text-sm font-bold text-primary-600 text-right">
+                    {formatMoney(cotizacion.conceptos.reduce((sum, c) => sum + c.subtotal, 0))}
+                  </td>
+                  {cotizacion.estado !== 'CONVERTIDA' && cotizacion.estado !== 'CANCELADA' && <td></td>}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <BanknotesIcon className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+            <p>No hay conceptos agregados</p>
+            <p className="text-sm">Agrega servicios como diesel, casetas, viáticos, etc.</p>
+          </div>
+        )}
       </div>
 
       {/* Resumen Financiero */}
@@ -728,6 +576,79 @@ export default function CotizacionDetalle() {
               </button>
               <button onClick={cambiarEstado} className="btn-primary flex-1">
                 Confirmar Cambio
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Agregar/Editar Concepto */}
+      {showConceptoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">
+              {editingConcepto ? 'Editar Concepto' : 'Agregar Concepto'}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="label">Servicio / Descripción</label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="Ej: Diesel, Casetas, Viáticos"
+                  value={conceptoForm.descripcion}
+                  onChange={(e) => setConceptoForm({ ...conceptoForm, descripcion: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Cantidad</label>
+                  <input
+                    type="number"
+                    className="input"
+                    placeholder="100"
+                    value={conceptoForm.cantidad || ''}
+                    onChange={(e) => setConceptoForm({ ...conceptoForm, cantidad: Number(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <label className="label">Unidad</label>
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder="litros, km, servicio"
+                    value={conceptoForm.unidad}
+                    onChange={(e) => setConceptoForm({ ...conceptoForm, unidad: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label">Precio Unitario</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="input"
+                  placeholder="24.50"
+                  value={conceptoForm.precioUnit || ''}
+                  onChange={(e) => setConceptoForm({ ...conceptoForm, precioUnit: Number(e.target.value) })}
+                />
+              </div>
+
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-900">
+                  Subtotal estimado: {formatMoney((conceptoForm.cantidad || 0) * (conceptoForm.precioUnit || 0))}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <button onClick={closeConceptoModal} className="btn-secondary flex-1">
+                Cancelar
+              </button>
+              <button onClick={saveConcepto} className="btn-primary flex-1">
+                {editingConcepto ? 'Actualizar' : 'Agregar'}
               </button>
             </div>
           </div>

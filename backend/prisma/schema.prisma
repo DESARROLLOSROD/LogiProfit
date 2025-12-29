@@ -181,14 +181,34 @@ model Cotizacion {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  empresa  Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  cliente  Cliente  @relation(fields: [clienteId], references: [id])
-  fletes   Flete[]
+  empresa   Empresa             @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  cliente   Cliente             @relation(fields: [clienteId], references: [id])
+  fletes    Flete[]
+  conceptos CotizacionConcepto[]
 
   @@index([empresaId, estado])
   @@index([clienteId])
   @@index([createdAt])
   @@map("cotizaciones")
+}
+
+// Conceptos/Servicios de la cotización (líneas personalizables)
+model CotizacionConcepto {
+  id           Int        @id @default(autoincrement())
+  cotizacionId Int
+  descripcion  String     // Ej: "Diesel", "Casetas", "Maniobras", etc.
+  cantidad     Decimal    @db.Decimal(10, 2)
+  unidad       String     // Ej: "litros", "km", "servicio", "día"
+  precioUnit   Decimal    @db.Decimal(12, 2)
+  subtotal     Decimal    @db.Decimal(12, 2) // cantidad * precioUnit
+  orden        Int        @default(0) // Para ordenar los conceptos
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  cotizacion Cotizacion @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+
+  @@index([cotizacionId])
+  @@map("cotizacion_conceptos")
 }
 
 enum EstadoCotizacion {

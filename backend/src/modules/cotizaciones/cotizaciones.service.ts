@@ -381,7 +381,13 @@ export class CotizacionesService {
   async findOne(id: number, empresaId: number) {
     const cotizacion = await this.prisma.cotizacion.findFirst({
       where: { id, empresaId },
-      include: { cliente: true, fletes: true },
+      include: {
+        cliente: true,
+        fletes: true,
+        conceptos: {
+          orderBy: { orden: 'asc' }
+        }
+      },
     });
 
     if (!cotizacion) {
@@ -508,10 +514,79 @@ export class CotizacionesService {
   async delete(id: number, empresaId: number) {
     const cotizacion = await this.findOne(id, empresaId);
 
-    if (cotizacion.fletes.length > 0) {
+    if (cotizacion.fletes && cotizacion.fletes.length > 0) {
       throw new BadRequestException('No se puede eliminar una cotización con fletes asociados');
     }
 
     return this.prisma.cotizacion.delete({ where: { id } });
+  }
+
+  // ==================== GESTIÓN DE CONCEPTOS ====================
+
+  async addConcepto(cotizacionId: number, empresaId: number, data: any) {
+    // Verificar que la cotización pertenece a la empresa
+    await this.findOne(cotizacionId, empresaId);
+
+    const subtotal = Number(data.cantidad) * Number(data.precioUnit);
+
+    return this.prisma.cotizacionConcepto.create({
+      data: {
+        cotizacionId,
+        descripcion: data.descripcion,
+        cantidad: data.cantidad,
+        unidad: data.unidad,
+        precioUnit: data.precioUnit,
+        subtotal,
+        orden: data.orden || 0,
+      },
+    });
+  }
+
+  async updateConcepto(conceptoId: number, cotizacionId: number, empresaId: number, data: any) {
+    // Verificar que la cotización pertenece a la empresa
+    await this.findOne(cotizacionId, empresaId);
+
+    // Verificar que el concepto pertenece a la cotización
+    const concepto = await this.prisma.cotizacionConcepto.findFirst({
+      where: { id: conceptoId, cotizacionId },
+    });
+
+    if (!concepto) {
+      throw new NotFoundException('Concepto no encontrado');
+    }
+
+    // Recalcular subtotal si cambian cantidad o precio
+    let subtotal = Number(concepto.subtotal);
+    if (data.cantidad !== undefined || data.precioUnit !== undefined) {
+      const cantidad = data.cantidad !== undefined ? Number(data.cantidad) : Number(concepto.cantidad);
+      const precioUnit = data.precioUnit !== undefined ? Number(data.precioUnit) : Number(concepto.precioUnit);
+      subtotal = cantidad * precioUnit;
+    }
+
+    return this.prisma.cotizacionConcepto.update({
+      where: { id: conceptoId },
+      data: {
+        ...data,
+        subtotal,
+      },
+    });
+  }
+
+  async deleteConcepto(conceptoId: number, cotizacionId: number, empresaId: number) {
+    // Verificar que la cotización pertenece a la empresa
+    await this.findOne(cotizacionId, empresaId);
+
+    // Verificar que el concepto pertenece a la cotización
+    const concepto = await this.prisma.cotizacionConcepto.findFirst({
+      where: { id: conceptoId, cotizacionId },
+    });
+
+    if (!concepto) {
+      throw new NotFoundException('Concepto no encontrado');
+    }
+
+    return this.prisma.cotizacionConcepto.delete({
+      where: { id: conceptoId },
+    });
   }
 }

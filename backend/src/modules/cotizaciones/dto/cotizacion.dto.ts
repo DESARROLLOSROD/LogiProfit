@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, IsDate, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString, IsDate, IsBoolean, IsArray, ValidateNested } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -218,4 +218,57 @@ export class UpdateCotizacionDto {
   @Type(() => Date)
   @IsOptional()
   validoHasta?: Date;
+}
+
+// DTOs para Conceptos de Cotización
+export class CreateConceptoDto {
+  @ApiProperty({ example: 'Diesel', description: 'Descripción del concepto/servicio' })
+  @IsString()
+  @IsNotEmpty()
+  descripcion: string;
+
+  @ApiProperty({ example: 100, description: 'Cantidad' })
+  @IsNumber()
+  cantidad: number;
+
+  @ApiProperty({ example: 'litros', description: 'Unidad de medida' })
+  @IsString()
+  @IsNotEmpty()
+  unidad: string;
+
+  @ApiProperty({ example: 24, description: 'Precio unitario' })
+  @IsNumber()
+  precioUnit: number;
+
+  @ApiProperty({ required: false, example: 0, description: 'Orden de visualización' })
+  @IsNumber()
+  @IsOptional()
+  orden?: number;
+}
+
+export class UpdateConceptoDto {
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  descripcion?: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  cantidad?: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  unidad?: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  precioUnit?: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  orden?: number;
 }

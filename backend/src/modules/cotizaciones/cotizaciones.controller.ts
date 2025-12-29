@@ -19,7 +19,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { CotizacionesService } from './cotizaciones.service';
-import { CreateCotizacionDto, UpdateCotizacionDto, SimularCostosDto } from './dto/cotizacion.dto';
+import { CreateCotizacionDto, UpdateCotizacionDto, SimularCostosDto, CreateConceptoDto, UpdateConceptoDto } from './dto/cotizacion.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EstadoCotizacion } from '@prisma/client';
 
@@ -90,5 +90,41 @@ export class CotizacionesController {
   @ApiOperation({ summary: 'Eliminar cotización' })
   delete(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.cotizacionesService.delete(id, req.user.empresaId);
+  }
+
+  // ==================== CONCEPTOS ====================
+
+  @Post(':id/conceptos')
+  @ApiOperation({ summary: 'Agregar concepto a cotización' })
+  @ApiResponse({ status: 201, description: 'Concepto agregado' })
+  addConcepto(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateConceptoDto,
+  ) {
+    return this.cotizacionesService.addConcepto(id, req.user.empresaId, dto);
+  }
+
+  @Patch(':id/conceptos/:conceptoId')
+  @ApiOperation({ summary: 'Actualizar concepto de cotización' })
+  @ApiResponse({ status: 200, description: 'Concepto actualizado' })
+  updateConcepto(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('conceptoId', ParseIntPipe) conceptoId: number,
+    @Body() dto: UpdateConceptoDto,
+  ) {
+    return this.cotizacionesService.updateConcepto(conceptoId, id, req.user.empresaId, dto);
+  }
+
+  @Delete(':id/conceptos/:conceptoId')
+  @ApiOperation({ summary: 'Eliminar concepto de cotización' })
+  @ApiResponse({ status: 200, description: 'Concepto eliminado' })
+  deleteConcepto(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('conceptoId', ParseIntPipe) conceptoId: number,
+  ) {
+    return this.cotizacionesService.deleteConcepto(conceptoId, id, req.user.empresaId);
   }
 }
