@@ -5,6 +5,7 @@ import {
   DocumentTextIcon,
   ExclamationTriangleIcon,
   TruckIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import api from '../lib/api';
 
@@ -72,16 +73,23 @@ interface PendientesData {
 export default function Pendientes() {
   const [data, setData] = useState<PendientesData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchPendientes = async () => {
+  const fetchPendientes = async (isRefresh = false) => {
     try {
+      if (isRefresh) setRefreshing(true);
       const response = await api.get('/dashboard/pendientes');
       setData(response.data);
     } catch (error) {
       console.error('Error fetching pendientes:', error);
     } finally {
       setLoading(false);
+      if (isRefresh) setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    fetchPendientes(true);
   };
 
   useEffect(() => {
@@ -128,13 +136,23 @@ export default function Pendientes() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Tareas Pendientes</h1>
-        <p className="text-gray-500">
-          {totalPendientes > 0
-            ? `Tienes ${totalPendientes} tarea${totalPendientes > 1 ? 's' : ''} pendiente${totalPendientes > 1 ? 's' : ''}`
-            : 'No tienes tareas pendientes'}
-        </p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Tareas Pendientes</h1>
+          <p className="text-gray-500">
+            {totalPendientes > 0
+              ? `Tienes ${totalPendientes} tarea${totalPendientes > 1 ? 's' : ''} pendiente${totalPendientes > 1 ? 's' : ''}`
+              : 'No tienes tareas pendientes'}
+          </p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="btn-secondary flex items-center gap-2"
+        >
+          <ArrowPathIcon className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+          Actualizar
+        </button>
       </div>
 
       {/* Resumen Cards */}

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
+import { usePendientes } from '../hooks/usePendientes'
+import GlobalSearch from '../components/GlobalSearch'
 import {
   HomeIcon,
   DocumentTextIcon,
@@ -93,6 +95,7 @@ export default function DashboardLayout() {
             </button>
 
             <div className="flex items-center gap-4">
+              <GlobalSearch />
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-900">{usuario?.nombre}</p>
                 <p className="text-xs text-gray-500">{usuario?.empresa.nombre}</p>
@@ -118,6 +121,8 @@ export default function DashboardLayout() {
 }
 
 function SidebarContent() {
+  const { count } = usePendientes()
+
   return (
     <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
       {navigation.map((item) => (
@@ -125,15 +130,22 @@ function SidebarContent() {
           key={item.name}
           to={item.href}
           className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            `flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               isActive
                 ? 'bg-primary-50 text-primary-700'
                 : 'text-gray-700 hover:bg-gray-100'
             }`
           }
         >
-          <item.icon className="w-5 h-5" />
-          {item.name}
+          <div className="flex items-center gap-3">
+            <item.icon className="w-5 h-5" />
+            {item.name}
+          </div>
+          {item.name === 'Pendientes' && count.total > 0 && (
+            <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+              {count.total}
+            </span>
+          )}
         </NavLink>
       ))}
     </nav>

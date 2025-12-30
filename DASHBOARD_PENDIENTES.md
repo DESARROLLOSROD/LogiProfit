@@ -5,6 +5,20 @@ Proporcionar a la contadora una vista centralizada de todas las tareas pendiente
 
 ## ✅ Implementación Completada
 
+### Mejoras Adicionales (Fase 2)
+
+#### 🔔 Badge de Notificación en Menú
+- **Custom Hook `usePendientes`** - Hook reutilizable que consulta el endpoint cada 5 minutos
+- **Badge rojo con contador** en el menú "Pendientes" cuando hay tareas pendientes
+- Actualización automática sin necesidad de recargar la página
+- Visual inmediato: la contadora ve el número de pendientes en todo momento
+
+#### 🔄 Botón de Actualización Manual
+- Botón "Actualizar" en la página de Pendientes
+- Ícono giratorio durante la actualización
+- Permite refrescar los datos sin recargar la página completa
+- Estado independiente (refreshing) para no bloquear la interfaz
+
 ### 1. Backend - Módulo Dashboard
 
 **Archivos creados:**
@@ -218,6 +232,43 @@ cot.diasRestantes < 0 ? 'badge-error'        // Vencida
 3. **Durante el día:** Actualizar conforme se resuelven tareas
 4. **Fin del día:** Verificar que todo esté al día
 
+## ✅ Características Implementadas (Fase 2)
+
+### Badge de Notificación
+```typescript
+// frontend/src/hooks/usePendientes.ts
+export function usePendientes() {
+  const [count, setCount] = useState<PendientesCount>({
+    total: 0,
+    // ... otros contadores
+  });
+
+  useEffect(() => {
+    fetchPendientes();
+    // Actualizar cada 5 minutos automáticamente
+    const interval = setInterval(fetchPendientes, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return { count, loading, refresh: fetchPendientes };
+}
+```
+
+### Menú con Badge
+```typescript
+// frontend/src/layouts/DashboardLayout.tsx
+{item.name === 'Pendientes' && count.total > 0 && (
+  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+    {count.total}
+  </span>
+)}
+```
+
+### Botón de Actualización
+- Ícono que gira durante la carga
+- Estado independiente `refreshing` para UX fluida
+- No bloquea la interfaz durante la actualización
+
 ## 🔮 Mejoras Futuras Planeadas
 
 1. **Modelo de Pagos**
@@ -225,10 +276,10 @@ cot.diasRestantes < 0 ? 'badge-error'        // Vencida
    - Trackear vencimientos
    - Mostrar pagos vencidos en el dashboard
 
-2. **Notificaciones**
+2. **Notificaciones Avanzadas**
    - Alertas automáticas de tareas urgentes
    - Resumen diario por email
-   - Badge de contador en el menú
+   - Notificaciones push en navegador
 
 3. **Filtros y Ordenamiento**
    - Filtrar por cliente
@@ -255,12 +306,14 @@ cot.diasRestantes < 0 ? 'badge-error'        // Vencida
 2. `backend/src/modules/dashboard/dashboard.controller.ts`
 3. `backend/src/modules/dashboard/dashboard.service.ts`
 4. `frontend/src/pages/Pendientes.tsx`
-5. `DASHBOARD_PENDIENTES.md` (este archivo)
+5. **`frontend/src/hooks/usePendientes.ts`** - Hook reutilizable (Fase 2)
+6. `DASHBOARD_PENDIENTES.md` (este archivo)
 
 ### Modificados:
 1. `backend/src/app.module.ts` - Import DashboardModule
 2. `frontend/src/App.tsx` - Route para /pendientes
-3. `frontend/src/layouts/DashboardLayout.tsx` - Link en menú
+3. **`frontend/src/layouts/DashboardLayout.tsx`** - Link en menú + Badge contador (Fase 2)
+4. **`frontend/src/pages/Pendientes.tsx`** - Botón de actualización manual (Fase 2)
 
 ## 🎉 Completado
 

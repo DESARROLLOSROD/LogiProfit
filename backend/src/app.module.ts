@@ -17,6 +17,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { MantenimientoModule } from './modules/mantenimiento/mantenimiento.module';
 import { IntegracionesModule } from './modules/integraciones/integraciones.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     MantenimientoModule,
     IntegracionesModule,
     DashboardModule,
+    SearchModule,
   ],
   providers: [
     {
