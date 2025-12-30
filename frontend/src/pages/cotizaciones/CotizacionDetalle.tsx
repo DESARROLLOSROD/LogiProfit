@@ -342,17 +342,50 @@ export default function CotizacionDetalle() {
                 ))}
               </tbody>
             </table>
-            <div className="mt-4 flex justify-end border-t pt-4">
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Total Conceptos</p>
-                <p className="text-xl font-bold text-gray-900">
-                  ${totalConceptos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                </p>
+            <div className="mt-4 border-t pt-4">
+              <div className="flex justify-between items-center mb-2">
+                <div>
+                  <p className="text-sm text-gray-500">Total Conceptos (Desglose)</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    ${totalConceptos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                {Math.abs(totalConceptos - cotizacion.precioCotizado) > 0.01 && (
+                  <div className="text-right">
+                    <p className="text-sm text-gray-500">Diferencia</p>
+                    <p className={`text-lg font-semibold ${
+                      totalConceptos > cotizacion.precioCotizado ? 'text-red-600' : 'text-yellow-600'
+                    }`}>
+                      {totalConceptos > cotizacion.precioCotizado ? '+' : ''}
+                      ${(totalConceptos - cotizacion.precioCotizado).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                )}
               </div>
+              {Math.abs(totalConceptos - cotizacion.precioCotizado) > 0.01 && (
+                <p className="text-xs text-gray-500">
+                  {totalConceptos > cotizacion.precioCotizado
+                    ? '⚠️ Los conceptos suman más que el precio cotizado'
+                    : '⚠️ Los conceptos suman menos que el precio cotizado'
+                  }
+                </p>
+              )}
+              {Math.abs(totalConceptos - cotizacion.precioCotizado) <= 0.01 && (
+                <div className="flex items-center gap-2 text-green-600">
+                  <span className="text-sm font-medium">✓ Coincide con precio cotizado</span>
+                </div>
+              )}
             </div>
           </div>
         ) : (
-          <p className="text-gray-500 text-center py-8">No hay conceptos agregados</p>
+          <div>
+            <p className="text-gray-500 text-center py-8">No hay conceptos agregados</p>
+            <div className="mt-4 border-t pt-4 bg-yellow-50 rounded-lg p-4">
+              <p className="text-sm text-yellow-800 text-center">
+                💡 Agrega conceptos para desglosar el precio cotizado de ${cotizacion.precioCotizado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+          </div>
         )}
       </div>
 

@@ -186,18 +186,9 @@ export class CotizacionesService {
 
   // ==================== GESTIÓN DE CONCEPTOS ====================
 
-  private async recalculateTotal(cotizacionId: number) {
-    const conceptos = await this.prisma.cotizacionConcepto.findMany({
-      where: { cotizacionId },
-    });
-
-    const total = conceptos.reduce((sum, c) => sum + Number(c.subtotal), 0);
-
-    await this.prisma.cotizacion.update({
-      where: { id: cotizacionId },
-      data: { precioCotizado: total },
-    });
-  }
+  // NOTA: El precioCotizado NO se recalcula automáticamente al agregar conceptos.
+  // El precioCotizado es el precio que se cotizó al cliente (valor fijo).
+  // Los conceptos son un desglose informativo que puede o no coincidir con el precio cotizado.
 
   async addConcepto(cotizacionId: number, empresaId: number, data: any) {
     // Verificar que la cotización pertenece a la empresa
@@ -218,7 +209,6 @@ export class CotizacionesService {
       },
     });
 
-    await this.recalculateTotal(cotizacionId);
     return concepto;
   }
 
@@ -251,7 +241,6 @@ export class CotizacionesService {
       },
     });
 
-    await this.recalculateTotal(cotizacionId);
     return updated;
   }
 
@@ -272,7 +261,6 @@ export class CotizacionesService {
       where: { id: conceptoId },
     });
 
-    await this.recalculateTotal(cotizacionId);
     return deleted;
   }
 }
