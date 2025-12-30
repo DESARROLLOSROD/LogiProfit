@@ -49,7 +49,7 @@ export default function Cotizaciones() {
   useEffect(() => {
     const fetchCotizaciones = async () => {
       try {
-        const response = await api.get('/cotizaciones')
+        const response = await api.get(`/cotizaciones?t=${Date.now()}`)
         // El backend ya convierte campos Decimal a números
         setCotizaciones(response.data)
       } catch (error) {

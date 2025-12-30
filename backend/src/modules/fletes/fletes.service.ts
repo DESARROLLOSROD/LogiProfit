@@ -11,7 +11,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class FletesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   // Generar folio único
   private async generarFolio(empresaId: number): Promise<string> {
@@ -73,7 +73,11 @@ export class FletesService {
       where: { id, empresaId },
       include: {
         cliente: true,
-        cotizacion: true,
+        cotizacion: {
+          include: {
+            conceptos: true,
+          }
+        },
         camiones: { include: { camion: true } },
         choferes: { include: { chofer: true } },
         gastos: {
@@ -93,8 +97,8 @@ export class FletesService {
     );
 
     const utilidad = Number(flete.precioCliente) - totalGastos;
-    const margen = Number(flete.precioCliente) > 0 
-      ? (utilidad / Number(flete.precioCliente)) * 100 
+    const margen = Number(flete.precioCliente) > 0
+      ? (utilidad / Number(flete.precioCliente)) * 100
       : 0;
 
     return {

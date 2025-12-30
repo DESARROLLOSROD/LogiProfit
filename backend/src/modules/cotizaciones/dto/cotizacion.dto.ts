@@ -1,6 +1,7 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, IsDate } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString, IsDate, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { TipoGasto } from '@prisma/client';
 
 export class CreateCotizacionDto {
   @ApiProperty({ example: 1, description: 'ID del cliente' })
@@ -105,6 +106,11 @@ export class UpdateCotizacionDto {
 
 // DTOs para Conceptos de Cotización
 export class CreateConceptoDto {
+  @ApiProperty({ enum: TipoGasto, required: false })
+  @IsEnum(TipoGasto)
+  @IsOptional()
+  tipo?: TipoGasto;
+
   @ApiProperty({ example: 'Diesel', description: 'Descripción del concepto/servicio' })
   @IsString()
   @IsNotEmpty()
@@ -130,6 +136,11 @@ export class CreateConceptoDto {
 }
 
 export class UpdateConceptoDto {
+  @ApiProperty({ enum: TipoGasto, required: false })
+  @IsEnum(TipoGasto)
+  @IsOptional()
+  tipo?: TipoGasto;
+
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()

@@ -12,6 +12,7 @@ import api from '../../lib/api'
 
 interface Concepto {
   id: number
+  tipo?: string
   descripcion: string
   cantidad: number
   unidad: string
@@ -60,6 +61,7 @@ export default function CotizacionDetalle() {
   const [showConceptoModal, setShowConceptoModal] = useState(false)
   const [editingConcepto, setEditingConcepto] = useState<Concepto | null>(null)
   const [conceptoForm, setConceptoForm] = useState({
+    tipo: '',
     descripcion: '',
     cantidad: '',
     unidad: '',
@@ -116,6 +118,7 @@ export default function CotizacionDetalle() {
     if (concepto) {
       setEditingConcepto(concepto)
       setConceptoForm({
+        tipo: concepto.tipo || '',
         descripcion: concepto.descripcion,
         cantidad: String(concepto.cantidad),
         unidad: concepto.unidad,
@@ -124,6 +127,7 @@ export default function CotizacionDetalle() {
     } else {
       setEditingConcepto(null)
       setConceptoForm({
+        tipo: '',
         descripcion: '',
         cantidad: '',
         unidad: '',
@@ -141,6 +145,7 @@ export default function CotizacionDetalle() {
 
     try {
       const payload = {
+        tipo: conceptoForm.tipo || undefined,
         descripcion: conceptoForm.descripcion,
         cantidad: Number(conceptoForm.cantidad),
         unidad: conceptoForm.unidad,
@@ -156,7 +161,7 @@ export default function CotizacionDetalle() {
       }
 
       setShowConceptoModal(false)
-      fetchCotizacion()
+      await fetchCotizacion()
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Error al guardar concepto')
     }
@@ -168,7 +173,7 @@ export default function CotizacionDetalle() {
     try {
       await api.delete(`/cotizaciones/${id}/conceptos/${conceptoId}`)
       toast.success('Concepto eliminado')
-      fetchCotizacion()
+      await fetchCotizacion()
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Error al eliminar concepto')
     }
@@ -431,13 +436,31 @@ export default function CotizacionDetalle() {
 
             <div className="space-y-4">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Categoría (Para Comparativa)</label>
+                <select
+                  value={conceptoForm.tipo}
+                  onChange={(e) => setConceptoForm({ ...conceptoForm, tipo: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5"
+                >
+                  <option value="">Opcional: Selecciona tipo</option>
+                  <option value="DIESEL">Diesel</option>
+                  <option value="CASETAS">Casetas</option>
+                  <option value="VIATICOS">Viáticos</option>
+                  <option value="MANTENIMIENTO">Mantenimiento</option>
+                  <option value="MANIOBRAS">Maniobras</option>
+                  <option value="SALARIO">Salario</option>
+                  <option value="OTRO">Otro</option>
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
                 <input
                   type="text"
                   value={conceptoForm.descripcion}
-                  onChange={(e) => setConceptoForm({...conceptoForm, descripcion: e.target.value})}
+                  onChange={(e) => setConceptoForm({ ...conceptoForm, descripcion: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5"
-                  placeholder="Ej: Diesel"
+                  placeholder="Ej: Diesel estimado"
                 />
               </div>
 
@@ -447,7 +470,7 @@ export default function CotizacionDetalle() {
                   <input
                     type="number"
                     value={conceptoForm.cantidad}
-                    onChange={(e) => setConceptoForm({...conceptoForm, cantidad: e.target.value})}
+                    onChange={(e) => setConceptoForm({ ...conceptoForm, cantidad: e.target.value })}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5"
                     step="0.01"
                   />
@@ -457,7 +480,7 @@ export default function CotizacionDetalle() {
                   <input
                     type="text"
                     value={conceptoForm.unidad}
-                    onChange={(e) => setConceptoForm({...conceptoForm, unidad: e.target.value})}
+                    onChange={(e) => setConceptoForm({ ...conceptoForm, unidad: e.target.value })}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5"
                     placeholder="Ej: litros"
                   />
@@ -469,7 +492,7 @@ export default function CotizacionDetalle() {
                 <input
                   type="number"
                   value={conceptoForm.precioUnit}
-                  onChange={(e) => setConceptoForm({...conceptoForm, precioUnit: e.target.value})}
+                  onChange={(e) => setConceptoForm({ ...conceptoForm, precioUnit: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5"
                   step="0.01"
                 />

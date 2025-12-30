@@ -158,6 +158,7 @@ model Cotizacion {
 model CotizacionConcepto {
   id           Int        @id @default(autoincrement())
   cotizacionId Int
+  tipo         TipoGasto? // Para comparar con gastos reales
   descripcion  String     // Ej: "Diesel", "Casetas", "Maniobras", etc.
   cantidad     Decimal    @db.Decimal(10, 2)
   unidad       String     // Ej: "litros", "km", "servicio", "día"

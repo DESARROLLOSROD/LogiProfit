@@ -5,7 +5,7 @@ import { EstadoCotizacion } from '@prisma/client';
 
 @Injectable()
 export class CotizacionesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   // Helper para convertir Decimal a número de forma segura
   private toNumber(value: any): number {
@@ -167,15 +167,29 @@ export class CotizacionesService {
 
   // ==================== GESTIÓN DE CONCEPTOS ====================
 
+  private async recalculateTotal(cotizacionId: number) {
+    const conceptos = await this.prisma.cotizacionConcepto.findMany({
+      where: { cotizacionId },
+    });
+
+    const total = conceptos.reduce((sum, c) => sum + Number(c.subtotal), 0);
+
+    await this.prisma.cotizacion.update({
+      where: { id: cotizacionId },
+      data: { precioCotizado: total },
+    });
+  }
+
   async addConcepto(cotizacionId: number, empresaId: number, data: any) {
     // Verificar que la cotización pertenece a la empresa
     await this.findOne(cotizacionId, empresaId);
 
     const subtotal = Number(data.cantidad) * Number(data.precioUnit);
 
-    return this.prisma.cotizacionConcepto.create({
+    const concepto = await this.prisma.cotizacionConcepto.create({
       data: {
         cotizacionId,
+        tipo: data.tipo,
         descripcion: data.descripcion,
         cantidad: data.cantidad,
         unidad: data.unidad,
@@ -184,6 +198,9 @@ export class CotizacionesService {
         orden: data.orden || 0,
       },
     });
+
+    await this.recalculateTotal(cotizacionId);
+    return concepto;
   }
 
   async updateConcepto(conceptoId: number, cotizacionId: number, empresaId: number, data: any) {
@@ -207,13 +224,16 @@ export class CotizacionesService {
       subtotal = cantidad * precioUnit;
     }
 
-    return this.prisma.cotizacionConcepto.update({
+    const updated = await this.prisma.cotizacionConcepto.update({
       where: { id: conceptoId },
       data: {
         ...data,
         subtotal,
       },
     });
+
+    await this.recalculateTotal(cotizacionId);
+    return updated;
   }
 
   async deleteConcepto(conceptoId: number, cotizacionId: number, empresaId: number) {
@@ -229,8 +249,11 @@ export class CotizacionesService {
       throw new NotFoundException('Concepto no encontrado');
     }
 
-    return this.prisma.cotizacionConcepto.delete({
+    const deleted = await this.prisma.cotizacionConcepto.delete({
       where: { id: conceptoId },
     });
+
+    await this.recalculateTotal(cotizacionId);
+    return deleted;
   }
 }

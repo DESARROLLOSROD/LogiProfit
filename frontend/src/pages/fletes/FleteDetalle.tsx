@@ -24,6 +24,16 @@ interface Flete {
   montoPagado?: number
   fechaVencimiento?: string
   fechaPago?: string
+  cotizacion?: {
+    id: number
+    folio: string
+    conceptos: Array<{
+      id: number
+      tipo?: string
+      descripcion: string
+      subtotal: number
+    }>
+  }
   camiones: Array<{ id: number; camion: { id: number; placas: string; numeroEconomico?: string } }>
   choferes: Array<{
     id: number
@@ -162,7 +172,7 @@ export default function FleteDetalle() {
       await api.patch(`/fletes/${id}/estado?estado=${nuevoEstado}`)
       toast.success('Estado actualizado')
       fetchFlete()
-    } catch {}
+    } catch { }
   }
 
   const validarGasto = async (gastoId: number) => {
@@ -170,7 +180,7 @@ export default function FleteDetalle() {
       await api.patch(`/gastos/${gastoId}/validar`)
       toast.success('Gasto validado')
       fetchFlete()
-    } catch {}
+    } catch { }
   }
 
   const agregarGasto = async () => {
@@ -186,7 +196,7 @@ export default function FleteDetalle() {
       setShowGastoModal(false)
       setNuevoGasto({ tipo: 'DIESEL', monto: '', concepto: '' })
       fetchFlete()
-    } catch {}
+    } catch { }
   }
 
   const asignarCamion = async () => {
@@ -203,7 +213,7 @@ export default function FleteDetalle() {
       setShowCamionModal(false)
       setCamionSeleccionado('')
       fetchFlete()
-    } catch {}
+    } catch { }
   }
 
   const desasignarCamion = async (camionId: number) => {
@@ -211,7 +221,7 @@ export default function FleteDetalle() {
       await api.delete(`/fletes/${id}/camiones/${camionId}`)
       toast.success('Camión desasignado')
       fetchFlete()
-    } catch {}
+    } catch { }
   }
 
   const asignarChofer = async () => {
@@ -247,7 +257,7 @@ export default function FleteDetalle() {
       setShowChoferModal(false)
       setChoferForm({ choferId: '', dias: '', kmReales: '' })
       fetchFlete()
-    } catch {}
+    } catch { }
   }
 
   const desasignarChofer = async (choferId: number) => {
@@ -255,7 +265,7 @@ export default function FleteDetalle() {
       await api.delete(`/fletes/${id}/choferes/${choferId}`)
       toast.success('Chofer desasignado')
       fetchFlete()
-    } catch {}
+    } catch { }
   }
 
   const duplicarFlete = async () => {
@@ -377,9 +387,8 @@ export default function FleteDetalle() {
         <div className="stat-card">
           <p className="text-sm text-gray-500">Utilidad</p>
           <p
-            className={`text-xl font-bold ${
-              flete.resumen.utilidad >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}
+            className={`text-xl font-bold ${flete.resumen.utilidad >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}
           >
             {formatMoney(flete.resumen.utilidad)}
           </p>
@@ -510,6 +519,51 @@ export default function FleteDetalle() {
       <div className="mb-6">
         <FleteChecklist fleteId={flete.id} />
       </div>
+
+      {/* Comparativa Estimado vs Real */}
+      {flete.cotizacion && (
+        <div className="card mb-6">
+          <h3 className="text-lg font-semibold mb-4">Comparativa: Estimado vs Real</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2 font-medium text-gray-500">Categoría</th>
+                  <th className="text-right py-2 font-medium text-gray-500">Estimado (Cotiz.)</th>
+                  <th className="text-right py-2 font-medium text-gray-500">Real (Gastos)</th>
+                  <th className="text-right py-2 font-medium text-gray-500">Diferencia</th>
+                </tr>
+              </thead>
+              <tbody>
+                {['DIESEL', 'CASETAS', 'VIATICOS', 'MANIOBRAS', 'SALARIO', 'OTRO'].map((tipo) => {
+                  const estimado = flete.cotizacion?.conceptos
+                    ?.filter((c) => c.tipo === tipo)
+                    .reduce((sum, c) => sum + Number(c.subtotal), 0) || 0
+
+                  const real = flete.gastos
+                    ?.filter((g) => g.tipo === tipo)
+                    .reduce((sum, g) => sum + Number(g.monto), 0) || 0
+
+                  const diff = real - estimado
+
+                  if (estimado === 0 && real === 0) return null
+
+                  return (
+                    <tr key={tipo} className="border-b">
+                      <td className="py-2 font-medium text-gray-700">{tipo}</td>
+                      <td className="py-2 text-right">{formatMoney(estimado)}</td>
+                      <td className="py-2 text-right">{formatMoney(real)}</td>
+                      <td className={`py-2 text-right font-bold ${diff > 0 ? 'text-red-600' : diff < 0 ? 'text-green-600' : 'text-gray-500'}`}>
+                        {diff > 0 ? '+' : ''}{formatMoney(diff)}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Gastos */}
       <div className="card">
@@ -748,15 +802,15 @@ export default function FleteDetalle() {
                   <p className="text-lg font-bold text-green-700">
                     {choferSeleccionadoTipo.tipoPago === 'POR_DIA' && choferForm.dias
                       ? formatMoney(
-                          (choferSeleccionadoTipo.tarifaDia || 0) * Number(choferForm.dias)
-                        )
+                        (choferSeleccionadoTipo.tarifaDia || 0) * Number(choferForm.dias)
+                      )
                       : choferSeleccionadoTipo.tipoPago === 'POR_KM' && choferForm.kmReales
-                      ? formatMoney(
+                        ? formatMoney(
                           (choferSeleccionadoTipo.tarifaKm || 0) * Number(choferForm.kmReales)
                         )
-                      : choferSeleccionadoTipo.tipoPago === 'POR_VIAJE'
-                      ? formatMoney(choferSeleccionadoTipo.tarifaViaje || 0)
-                      : '-'}
+                        : choferSeleccionadoTipo.tipoPago === 'POR_VIAJE'
+                          ? formatMoney(choferSeleccionadoTipo.tarifaViaje || 0)
+                          : '-'}
                   </p>
                 </div>
               )}
