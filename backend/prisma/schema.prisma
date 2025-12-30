@@ -328,6 +328,7 @@ enum TipoPago {
   POR_KM
   POR_QUINCENA
   MENSUAL
+  MENSUAL_DETALLADO
 }
 
 // ==================== ASIGNACIONES ====================
