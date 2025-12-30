@@ -1,12 +1,11 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   PlusIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
   ChevronUpIcon,
   ChevronDownIcon,
-  TrashIcon,
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
