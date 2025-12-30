@@ -158,8 +158,26 @@ export class CotizacionesService {
   async delete(id: number, empresaId: number) {
     const cotizacion = await this.findOne(id, empresaId);
 
+    // Verificar si hay fletes asociados
     if (cotizacion.fletes && cotizacion.fletes.length > 0) {
-      throw new BadRequestException('No se puede eliminar una cotización con fletes asociados');
+      // Verificar el estado de los fletes
+      const fletesActivos = cotizacion.fletes.filter(
+        f => f.estado !== 'PLANEADO' && f.estado !== 'CANCELADO'
+      );
+
+      if (fletesActivos.length > 0) {
+        const estados = fletesActivos.map(f => f.estado).join(', ');
+        throw new BadRequestException(
+          `No se puede eliminar la cotización. Tiene ${fletesActivos.length} flete(s) ` +
+          `en estado activo (${estados}). Solo se permite si todos los fletes están ` +
+          `en estado PLANEADO o CANCELADO.`
+        );
+      }
+
+      // Si todos los fletes están en PLANEADO o CANCELADO, eliminarlos primero
+      await this.prisma.flete.deleteMany({
+        where: { cotizacionId: id },
+      });
     }
 
     // Los conceptos se eliminan automáticamente gracias a onDelete: Cascade

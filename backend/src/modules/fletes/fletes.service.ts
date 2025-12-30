@@ -157,6 +157,22 @@ export class FletesService {
     });
   }
 
+  async delete(id: number, empresaId: number) {
+    const flete = await this.findOne(id, empresaId);
+
+    // Solo se puede eliminar si está en estado PLANEADO o CANCELADO
+    if (flete.estado !== EstadoFlete.PLANEADO && flete.estado !== EstadoFlete.CANCELADO) {
+      throw new BadRequestException(
+        `No se puede eliminar un flete en estado ${flete.estado}. ` +
+        `Solo se pueden eliminar fletes en estado PLANEADO o CANCELADO.`
+      );
+    }
+
+    // Si el flete tiene cotización asociada, actualizar para permitir eliminar la cotización
+    // Los gastos, asignaciones y checklist se eliminan automáticamente por CASCADE
+    return this.prisma.flete.delete({ where: { id } });
+  }
+
   // ==================== ASIGNACIONES ====================
 
   async asignarCamion(fleteId: number, empresaId: number, dto: AsignarCamionDto) {

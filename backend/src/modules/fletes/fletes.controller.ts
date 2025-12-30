@@ -94,6 +94,14 @@ export class FletesController {
     return this.fletesService.cambiarEstado(id, req.user.empresaId, estado);
   }
 
+  @Delete(':id')
+  @ApiOperation({ summary: 'Eliminar flete' })
+  @ApiResponse({ status: 200, description: 'Flete eliminado. Solo se pueden eliminar fletes en estado PLANEADO o CANCELADO.' })
+  @ApiResponse({ status: 400, description: 'No se puede eliminar el flete en su estado actual' })
+  delete(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.fletesService.delete(id, req.user.empresaId);
+  }
+
   @Patch(':id/pago')
   @ApiOperation({ summary: 'Actualizar estado de pago del flete' })
   @ApiResponse({ status: 200, description: 'Estado de pago actualizado' })
