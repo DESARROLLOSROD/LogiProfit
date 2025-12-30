@@ -21,7 +21,7 @@ interface Flete {
   origen: string
   destino: string
   precioCliente: number
-  estado: string
+  estado?: string
   fechaInicio?: string
   gastos: Array<{ monto: number }>
 }
@@ -158,7 +158,8 @@ export default function Fletes() {
     return badges[estado] || 'badge-gray'
   }
 
-  const puedeEliminar = (estado: string) => {
+  const puedeEliminar = (estado: string | undefined) => {
+    if (!estado) return false
     return estado === 'PLANEADO' || estado === 'CANCELADO'
   }
 
@@ -317,7 +318,7 @@ export default function Fletes() {
                   </td>
                   <td>
                     <span className={`badge ${getEstadoBadge(flete.estado)}`}>
-                      {flete.estado.replace('_', ' ')}
+                      {flete.estado ? flete.estado.replace('_', ' ') : 'N/A'}
                     </span>
                   </td>
                   <td>
