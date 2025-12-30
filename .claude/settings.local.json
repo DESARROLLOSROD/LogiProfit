@@ -28,7 +28,9 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(npm run prisma:migrate:*)",
-      "Bash(node node_modules/.bin/prisma migrate dev:*)"
+      "Bash(node node_modules/.bin/prisma migrate dev:*)",
+      "Bash(npm run prisma:migrate:deploy:*)",
+      "Bash(npm run prisma:generate:*)"
     ]
   }
 }
