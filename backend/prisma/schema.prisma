@@ -1,0 +1,579 @@
+// prisma/schema.prisma
+// LogiProfit - Sistema de Rentabilidad para Empresas de Fletes
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENTIDADES CORE ====================
+
+model Empresa {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  rfc       String?  @unique
+  plan      Plan     @default(BASICO)
+  activa    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  usuarios             Usuario[]
+  clientes             Cliente[]
+  camiones             Camion[]
+  choferes             Chofer[]
+  cotizaciones         Cotizacion[]
+  fletes               Flete[]
+  configuracionesMapeo ConfiguracionMapeo[]
+  importacionesLog     ImportacionLog[]
+  plantillasGasto      PlantillaGasto[]
+
+  @@map("empresas")
+}
+
+enum Plan {
+  BASICO
+  PROFESIONAL
+  ENTERPRISE
+}
+
+model Usuario {
+  id        Int         @id @default(autoincrement())
+  empresaId Int
+  nombre    String
+  email     String      @unique
+  password  String
+  rol       RolUsuario
+  activo    Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  empresa  Empresa               @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  permisos UsuarioPermiso[]
+
+  @@index([empresaId])
+  @@index([email])
+  @@map("usuarios")
+}
+
+enum RolUsuario {
+  ADMIN
+  OPERADOR
+  CHOFER
+  CONTABILIDAD
+  DIRECCION
+}
+
+// ==================== PERMISOS RBAC ====================
+
+model Permiso {
+  id          Int              @id @default(autoincrement())
+  modulo      String           // "cotizaciones", "fletes", "reportes", etc.
+  accion      String           // "crear", "leer", "actualizar", "eliminar", "exportar"
+  descripcion String
+  createdAt   DateTime         @default(now())
+
+  usuarios    UsuarioPermiso[]
+
+  @@unique([modulo, accion])
+  @@map("permisos")
+}
+
+model UsuarioPermiso {
+  id         Int      @id @default(autoincrement())
+  usuarioId  Int
+  permisoId  Int
+  createdAt  DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  permiso Permiso @relation(fields: [permisoId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, permisoId])
+  @@map("usuario_permisos")
+}
+
+model Cliente {
+  id        Int      @id @default(autoincrement())
+  empresaId Int
+  nombre    String
+  rfc       String?
+  email     String?
+  telefono  String?
+  direccion String?
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  empresa      Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  cotizaciones Cotizacion[]
+  fletes       Flete[]
+
+  @@map("clientes")
+}
+
+// ==================== COTIZACIONES ====================
+
+model Cotizacion {
+  id               Int              @id @default(autoincrement())
+  empresaId        Int
+  clienteId        Int
+  folio            String           @unique
+  origen           String
+  destino          String
+
+  // Descripción de la carga
+  tipoCarga        String?
+  pesoCarga        Decimal?         @db.Decimal(10, 2) // toneladas
+  dimensiones      String?          // "L x A x H"
+
+  // Kilometraje estimado
+  kmEstimado       Decimal          @default(0) @db.Decimal(10, 2)
+
+  // Precio cotizado al cliente (único monto que ve el cliente)
+  precioCotizado   Decimal          @db.Decimal(12, 2)
+
+  // Estado y datos administrativos
+  estado           EstadoCotizacion @default(BORRADOR)
+  notas            String?
+  validoHasta      DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  empresa   Empresa             @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  cliente   Cliente             @relation(fields: [clienteId], references: [id])
+  fletes    Flete[]
+  conceptos CotizacionConcepto[]
+
+  @@index([empresaId, estado])
+  @@index([clienteId])
+  @@index([createdAt])
+  @@map("cotizaciones")
+}
+
+// Conceptos/Servicios de la cotización (líneas personalizables)
+model CotizacionConcepto {
+  id           Int        @id @default(autoincrement())
+  cotizacionId Int
+  tipo         TipoGasto? // Para comparar con gastos reales
+  descripcion  String     // Ej: "Diesel", "Casetas", "Maniobras", etc.
+  cantidad     Decimal    @db.Decimal(10, 2)
+  unidad       String     // Ej: "litros", "km", "servicio", "día"
+  precioUnit   Decimal    @db.Decimal(12, 2)
+  subtotal     Decimal    @db.Decimal(12, 2) // cantidad * precioUnit
+  orden        Int        @default(0) // Para ordenar los conceptos
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  cotizacion Cotizacion @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+
+  @@index([cotizacionId])
+  @@map("cotizacion_conceptos")
+}
+
+enum EstadoCotizacion {
+  BORRADOR
+  ENVIADA
+  APROBADA
+  RECHAZADA
+  CONVERTIDA
+  CANCELADA
+}
+
+// ==================== FLETES ====================
+
+model Flete {
+  id            Int         @id @default(autoincrement())
+  empresaId     Int
+  cotizacionId  Int?
+  clienteId     Int
+  folio         String      @unique
+
+  origen        String
+  destino       String
+  kmReales      Decimal?    @db.Decimal(10, 2)
+
+  precioCliente Decimal     @db.Decimal(12, 2)
+  estado        EstadoFlete @default(PLANEADO)
+
+  fechaInicio   DateTime?
+  fechaFin      DateTime?
+
+  // Campos de pago
+  estadoPago      EstadoPago? @default(PENDIENTE)
+  montoPagado     Decimal?    @db.Decimal(12, 2) @default(0)
+  fechaVencimiento DateTime?
+  fechaPago       DateTime?
+
+  notas         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  empresa      Empresa            @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  cotizacion   Cotizacion?        @relation(fields: [cotizacionId], references: [id])
+  cliente      Cliente            @relation(fields: [clienteId], references: [id])
+  camiones     FleteCamion[]
+  choferes     FleteChofer[]
+  gastos       Gasto[]
+  checklist    FleteChecklist[]
+
+  @@index([empresaId, estado])
+  @@index([empresaId, estadoPago])
+  @@index([clienteId])
+  @@index([fechaInicio])
+  @@index([fechaVencimiento])
+  @@index([createdAt])
+  @@map("fletes")
+}
+
+model FleteChecklist {
+  id          Int      @id @default(autoincrement())
+  fleteId     Int
+  descripcion String
+  completado  Boolean  @default(false)
+  orden       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  flete Flete @relation(fields: [fleteId], references: [id], onDelete: Cascade)
+
+  @@index([fleteId])
+  @@map("flete_checklist")
+}
+
+enum EstadoFlete {
+  PLANEADO
+  EN_CURSO
+  COMPLETADO
+  CERRADO
+  CANCELADO
+}
+
+enum EstadoPago {
+  PENDIENTE
+  PARCIAL
+  PAGADO
+  VENCIDO
+}
+
+// ==================== CAMIONES ====================
+
+model Camion {
+  id                    Int      @id @default(autoincrement())
+  empresaId             Int
+  placas                String
+  numeroEconomico       String?
+  marca                 String?
+  modelo                String?
+  anio                  Int?
+  tipo                  TipoCamion
+  rendimientoKmLCargado Decimal  @default(2.5) @db.Decimal(5, 2) // km por litro cargado
+  rendimientoKmLVacio   Decimal  @default(3.0) @db.Decimal(5, 2) // km por litro vacío
+  capacidadCarga        Decimal? @db.Decimal(10, 2) // toneladas
+  kmActual              Decimal  @default(0) @db.Decimal(10, 2) // odómetro actual
+  activo                Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  empresa        Empresa             @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  fletes         FleteCamion[]
+  gastos         Gasto[]
+  mantenimientos Mantenimiento[]
+
+  @@unique([empresaId, placas])
+  @@map("camiones")
+}
+
+enum TipoCamion {
+  TORTON
+  TRAILER
+  RABON
+  CAMIONETA
+  LOWBOY      // Cama baja para cargas sobredimensionadas
+  OTRO
+}
+
+// ==================== CHOFERES ====================
+
+model Chofer {
+  id        Int         @id @default(autoincrement())
+  empresaId Int
+  nombre    String
+  telefono  String?
+  licencia  String?
+  tipo      TipoChofer
+  tipoPago  TipoPago
+  tarifa    Decimal     @db.Decimal(10, 2)
+  activo    Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  empresa Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  fletes  FleteChofer[]
+
+  @@map("choferes")
+}
+
+enum TipoChofer {
+  FIJO
+  ROTATIVO
+}
+
+enum TipoPago {
+  POR_DIA
+  POR_VIAJE
+  POR_KM
+  POR_QUINCENA
+  MENSUAL
+}
+
+// ==================== ASIGNACIONES ====================
+
+model FleteCamion {
+  id        Int      @id @default(autoincrement())
+  fleteId   Int
+  camionId  Int
+  principal Boolean  @default(false)
+  notas     String?
+  createdAt DateTime @default(now())
+
+  flete  Flete  @relation(fields: [fleteId], references: [id], onDelete: Cascade)
+  camion Camion @relation(fields: [camionId], references: [id])
+
+  @@unique([fleteId, camionId])
+  @@map("flete_camiones")
+}
+
+model FleteChofer {
+  id               Int      @id @default(autoincrement())
+  fleteId          Int
+  choferId         Int
+  fechaInicio      DateTime
+  fechaFin         DateTime?
+  dias             Int?
+  kmReales         Decimal? @db.Decimal(10, 2)
+  salarioCalculado Decimal? @db.Decimal(12, 2)
+  notas            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  flete  Flete  @relation(fields: [fleteId], references: [id], onDelete: Cascade)
+  chofer Chofer @relation(fields: [choferId], references: [id])
+
+  @@map("flete_choferes")
+}
+
+// ==================== GASTOS ====================
+
+model CategoriaGasto {
+  id            Int      @id @default(autoincrement())
+  empresaId     Int
+  nombre        String
+  descripcion   String?
+  color         String?  // Hex color para UI
+  activa        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  gastos        Gasto[]
+  presupuestos  PresupuestoCategoria[]
+
+  @@map("categorias_gasto")
+}
+
+model PlantillaGasto {
+  id             Int       @id @default(autoincrement())
+  empresaId      Int
+  nombre         String
+  tipo           TipoGasto
+  concepto       String?
+  montoEstimado  Decimal   @db.Decimal(12, 2)
+  activa         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@index([empresaId])
+  @@map("plantillas_gasto")
+}
+
+model Gasto {
+  id             Int              @id @default(autoincrement())
+  fleteId        Int
+  camionId       Int?
+  categoriaId    Int?
+  tipo           TipoGasto
+  concepto       String?
+  monto          Decimal          @db.Decimal(12, 2)
+  fecha          DateTime
+  comprobanteUrl String?
+  validado       Boolean          @default(false)
+  validadoPor    Int?
+  validadoAt     DateTime?
+  notas          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  flete     Flete            @relation(fields: [fleteId], references: [id], onDelete: Cascade)
+  camion    Camion?          @relation(fields: [camionId], references: [id])
+  categoria CategoriaGasto?  @relation(fields: [categoriaId], references: [id])
+
+  @@index([fleteId])
+  @@index([categoriaId])
+  @@index([fecha])
+  @@map("gastos")
+}
+
+enum TipoGasto {
+  DIESEL
+  CASETAS
+  VIATICOS
+  MANTENIMIENTO
+  MULTA
+  SALARIO
+  PENSION
+  MANIOBRAS
+  OTRO
+}
+
+// ==================== PRESUPUESTOS ====================
+
+model Presupuesto {
+  id          Int      @id @default(autoincrement())
+  empresaId   Int
+  nombre      String
+  periodo     String   // "2024-01", "2024-Q1", "2024"
+  total       Decimal  @db.Decimal(12, 2)
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categorias  PresupuestoCategoria[]
+
+  @@map("presupuestos")
+}
+
+model PresupuestoCategoria {
+  id             Int            @id @default(autoincrement())
+  presupuestoId  Int
+  categoriaId    Int
+  monto          Decimal        @db.Decimal(12, 2)
+  createdAt      DateTime       @default(now())
+
+  presupuesto    Presupuesto    @relation(fields: [presupuestoId], references: [id], onDelete: Cascade)
+  categoria      CategoriaGasto @relation(fields: [categoriaId], references: [id])
+
+  @@unique([presupuestoId, categoriaId])
+  @@map("presupuesto_categorias")
+}
+
+// ==================== MANTENIMIENTO ====================
+
+model Mantenimiento {
+  id                Int                  @id @default(autoincrement())
+  camionId          Int
+  tipo              TipoMantenimiento
+  descripcion       String
+  kmProgramado      Decimal?             @db.Decimal(10, 2)
+  fechaProgramada   DateTime?
+  kmRealizado       Decimal?             @db.Decimal(10, 2)
+  fechaRealizado    DateTime?
+  costo             Decimal?             @db.Decimal(12, 2)
+  proveedor         String?
+  comprobanteUrl    String?
+  estado            EstadoMantenimiento  @default(PENDIENTE)
+  notas             String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  camion Camion @relation(fields: [camionId], references: [id], onDelete: Cascade)
+
+  @@index([camionId, estado])
+  @@index([fechaProgramada])
+  @@map("mantenimientos")
+}
+
+enum TipoMantenimiento {
+  PREVENTIVO
+  CORRECTIVO
+  CAMBIO_ACEITE
+  CAMBIO_LLANTAS
+  FRENOS
+  SUSPENSION
+  ELECTRICO
+  TRANSMISION
+  MOTOR
+  OTRO
+}
+
+enum EstadoMantenimiento {
+  PENDIENTE
+  EN_PROCESO
+  COMPLETADO
+  CANCELADO
+}
+
+// ==================== INTEGRACIONES EXTERNAS ====================
+
+model ConfiguracionMapeo {
+  id              Int             @id @default(autoincrement())
+  empresaId       Int
+  nombre          String
+  descripcion     String?
+  sistema         SistemaExterno
+  tipoArchivo     TipoArchivo
+  activa          Boolean         @default(true)
+  mapeos          Json            // { "folio": "COL_A", "clienteNombre": "COL_B", ... }
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  empresa         Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  importaciones   ImportacionLog[]
+
+  @@index([empresaId])
+  @@map("configuraciones_mapeo")
+}
+
+model ImportacionLog {
+  id                      Int                  @id @default(autoincrement())
+  empresaId               Int
+  usuarioId               Int?
+  configuracionMapeoId    Int?
+  nombreArchivo           String
+  tipoOperacion           TipoOperacion
+  formato                 TipoArchivo
+  totalRegistros          Int
+  registrosExitosos       Int
+  registrosActualizados   Int
+  registrosErrores        Int
+  detallesErrores         Json?
+  createdAt               DateTime             @default(now())
+
+  empresa                 Empresa              @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  configuracionMapeo      ConfiguracionMapeo?  @relation(fields: [configuracionMapeoId], references: [id])
+
+  @@index([empresaId])
+  @@index([createdAt])
+  @@map("importaciones_log")
+}
+
+enum SistemaExterno {
+  ASPEL
+  MICROSIP
+  OTRO
+}
+
+enum TipoArchivo {
+  EXCEL
+  CSV
+  XML
+}
+
+enum TipoOperacion {
+  IMPORTACION
+  EXPORTACION
+}
