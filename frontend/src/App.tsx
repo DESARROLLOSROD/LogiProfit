@@ -9,7 +9,7 @@ import DashboardLayout from './layouts/DashboardLayout'
 
 // Auth Pages
 import Login from './pages/auth/Login'
-import Register from './pages/auth/Register'
+// import Register from './pages/auth/Register'
 
 // Dashboard Pages
 import Dashboard from './pages/Dashboard'
@@ -69,14 +69,14 @@ export default function App() {
             </PublicRoute>
           }
         />
-        <Route
+        {/* <Route
           path="/register"
           element={
             <PublicRoute>
               <Register />
             </PublicRoute>
           }
-        />
+        /> */}
       </Route>
 
       {/* Dashboard Routes */}
@@ -94,11 +94,11 @@ export default function App() {
         <Route path="/cotizaciones" element={<Cotizaciones />} />
         <Route path="/cotizaciones/nueva" element={<NuevaCotizacionMejorada />} />
         <Route path="/cotizaciones/:id" element={<CotizacionDetalle />} />
-        
+
         {/* Fletes */}
         <Route path="/fletes" element={<Fletes />} />
         <Route path="/fletes/:id" element={<FleteDetalle />} />
-        
+
         {/* Catálogos */}
         <Route path="/camiones" element={<Camiones />} />
         <Route path="/choferes" element={<Choferes />} />

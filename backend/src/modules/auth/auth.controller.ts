@@ -22,6 +22,7 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  /*
   @Post('register')
   @Throttle({ default: { limit: 3, ttl: 60000 } }) // Muy restrictivo: 3 intentos por minuto
   @ApiOperation({ summary: 'Registrar nueva empresa y usuario admin' })
@@ -31,6 +32,7 @@ export class AuthController {
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
+  */
 
   @Get('me')
   @UseGuards(JwtAuthGuard)

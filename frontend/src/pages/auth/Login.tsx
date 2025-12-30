@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuthStore } from '../../stores/authStore'
 import toast from 'react-hot-toast'
@@ -70,21 +70,6 @@ export default function Login() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-600">
-        ¿No tienes cuenta?{' '}
-        <Link to="/register" className="text-primary-600 font-medium hover:underline">
-          Regístrate
-        </Link>
-      </p>
-
-      {/* Demo credentials */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-        <p className="text-xs text-gray-500 text-center mb-2">Credenciales demo:</p>
-        <p className="text-xs text-gray-600 text-center">
-          <span className="font-medium">Email:</span> admin@demo.com<br />
-          <span className="font-medium">Password:</span> demo123
-        </p>
-      </div>
     </>
   )
 }

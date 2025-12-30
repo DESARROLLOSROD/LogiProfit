@@ -27,49 +27,59 @@ LogiProfit permite a las empresas de transporte conocer la rentabilidad real de 
 
 ## ⚙️ Flujos Técnicos
 
-### 1. Ciclo de Vida de Cotización a Flete
-```mermaid
-graph TD
-    A[Nueva Cotización] --> B{Validación de Costos}
-    B -->|Borrador| C[Cálculo de Utilidad Estimada]
-    C --> D[Envío a Cliente]
-    D --> E{Respuesta}
-    E -->|Aprobada| F[Conversión a Flete]
-    E -->|Rechazada| G[Archivo]
-    F --> H[Asignación de Camión y Chofer]
-```
+### 1. Conversión de Cotización a Flete (Transaccional)
+Cuando una cotización es aprobada, el sistema utiliza una transacción de base de datos para asegurar la integridad:
 
-### 2. Flujo de Control de Gastos y Rentabilidad
-```mermaid
-graph LR
-    A[Flete en Curso] --> B[Registro de Gasto]
-    B --> C[Subir Comprobante]
-    C --> D{Validación Contable}
-    D -->|Validado| E[Actualización de P&L Real]
-    E --> F[Dashboard de Rentabilidad]
-```
-
-### 3. Sistema de Alertas (WebSockets)
 ```mermaid
 sequenceDiagram
-    participant B as Backend
-    participant W as WebSocket Gateway
-    participant F as Frontend
-    B->>B: Detectar Gasto Alto / Margen Bajo
-    B->>W: Emitir Evento 'margen-bajo'
-    W->>F: Notificación en Tiempo Real
-    F->>F: Actualizar Badge de Pendientes
+    participant U as Usuario
+    participant S as CotizacionService
+    participant DB as Prisma/PostgreSQL
+    U->>S: convertirAFlete(id)
+    S->>DB: Verificar estado != CONVERTIDA
+    S->>DB: Generar folio F-XXXXX
+    Note over S,DB: Inicio Transacción
+    S->>DB: Crear registro en tabla 'fletes'
+    S->>DB: Actualizar cotizacion.estado = CONVERTIDA
+    Note over S,DB: Fin Transacción
+    DB-->>S: Registro de Flete
+    S-->>U: Confirmación de Flete Creado
 ```
+**Detalle Técnico**: Los precios se copian de la cotización al flete para mantener un registro histórico inmutable, incluso si la cotización original se modificara después.
 
-### 4. Mantenimiento Preventivo
+### 2. Gestión de Gastos y P&L Real
+El sistema recalcula la utilidad cada vez que se interactúa con un gasto.
+
 ```mermaid
 graph TD
-    A[Kilometraje de Camión] --> B{¿Requiere Mant.?}
-    B -->|Sí/Próximo| C[Alerta en Dashboard]
-    C --> D[Programar Mantenimiento]
-    D --> E[Ejecutar y Registrar Costo]
-    E --> F[Actualizar Odómetro y Fecha]
+    A[Flete: PLANEADO] --> B[Asignar Chofer]
+    B --> C{Tipo Pago?}
+    C -->|Por Viaje/Día| D[Gasto SALARIO Auto-generado]
+    A --> E[Registro Manual de Gastos]
+    E --> F[Subir Comprobante URL]
+    F --> G[Validación Contable]
+    G --> H[P&L: Ingreso - Σ Gastos]
+    H --> I[Dashboard: Margen Real]
 ```
+**Lógica de Negocio**:
+- **Validación**: Un flete en estado `CERRADO` no puede tener gastos sin validar.
+- **Salarios**: Si el chofer tiene esquema de pago por viaje o km, la asignación al flete dispara la creación automática de un gasto tipo `SALARIO`.
+
+### 3. Motor de Pendientes (Dashboard)
+El dashboard utiliza lógica de agregación y filtros complejos para identificar tareas críticas:
+
+| Pendiente | Lógica Técnica de Detección (SQL/Prisma) |
+|-----------|------------------------------------------|
+| **Fletes sin Gastos** | `flete.estado IN [EN_CURSO, COMPLETADO] AND flete.gastos.none()` |
+| **Cotizaciones Vencidas** | `cot.estado IN [ENVIADA, BORRADOR] AND cot.validoHasta <= hoy + 7d` |
+| **Comprobantes Faltantes** | `gasto.comprobanteUrl == null` |
+| **Pagos Vencidos** | `flete.estadoPago IN [PENDIENTE, PARCIAL] AND flete.fechaVencimiento < hoy` |
+
+### 4. Sistema de Alertas Proactivas
+Utiliza WebSockets (Socket.io) para notificar sin necesidad de recargar la página.
+- **Gateway**: `NotificationsGateway` maneja salas por `empresaId`.
+- **Eventos**: `flete-urgente`, `flete-perdida`, `cotizacion-aprobada`, `margen-bajo`.
+- **Trigger**: Los hooks de Prisma (o servicios) emiten eventos al detectar umbrales de margen < 15%.
 
 ---
 
