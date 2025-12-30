@@ -213,7 +213,7 @@ model Flete {
   updatedAt     DateTime    @updatedAt
 
   empresa      Empresa            @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  cotizacion   Cotizacion?        @relation(fields: [cotizacionId], references: [id])
+  cotizacion   Cotizacion?        @relation(fields: [cotizacionId], references: [id], onDelete: Restrict)
   cliente      Cliente            @relation(fields: [clienteId], references: [id])
   camiones     FleteCamion[]
   choferes     FleteChofer[]
