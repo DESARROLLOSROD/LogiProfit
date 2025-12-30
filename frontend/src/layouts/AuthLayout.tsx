@@ -12,13 +12,13 @@ export default function AuthLayout() {
           <h1 className="text-3xl font-bold text-white">LogiProfit</h1>
           <p className="text-primary-200 mt-2">Rentabilidad inteligente para fletes</p>
         </div>
-        
+
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <Outlet />
         </div>
-        
+
         <p className="text-center text-primary-200 text-sm mt-6">
-          © 2024 LogiProfit. Todos los derechos reservados.
+          © 2025 LogiProfit. Todos los derechos reservados.
         </p>
       </div>
     </div>
