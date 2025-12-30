@@ -282,6 +282,7 @@ model Camion {
   fletes         FleteCamion[]
   gastos         Gasto[]
   mantenimientos Mantenimiento[]
+  documentos     DocumentoVehiculo[]
 
   @@unique([empresaId, placas])
   @@map("camiones")
@@ -516,6 +517,47 @@ enum EstadoMantenimiento {
   EN_PROCESO
   COMPLETADO
   CANCELADO
+}
+
+// ==================== DOCUMENTOS DE VEHÍCULOS ====================
+
+model DocumentoVehiculo {
+  id               Int             @id @default(autoincrement())
+  camionId         Int
+  tipo             TipoDocumento
+  numero           String?
+  archivoUrl       String          // URL del archivo en storage
+  nombreArchivo    String          // Nombre original del archivo
+  fechaEmision     DateTime
+  fechaVencimiento DateTime
+  estado           EstadoDocumento @default(VIGENTE)
+  notas            String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  camion Camion @relation(fields: [camionId], references: [id], onDelete: Cascade)
+
+  @@index([camionId])
+  @@index([estado])
+  @@index([fechaVencimiento])
+  @@map("documentos_vehiculo")
+}
+
+enum TipoDocumento {
+  POLIZA
+  TARJETA_CIRCULACION
+  VERIFICACION
+  LICENCIA
+  TARJETA_IAVE
+  PERMISO_SCT
+  SEGURO
+  OTRO
+}
+
+enum EstadoDocumento {
+  VIGENTE
+  POR_VENCER    // Menos de 30 días para vencimiento
+  VENCIDO
 }
 
 // ==================== INTEGRACIONES EXTERNAS ====================

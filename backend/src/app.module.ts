@@ -19,6 +19,7 @@ import { IntegracionesModule } from './modules/integraciones/integraciones.modul
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { SearchModule } from './modules/search/search.module';
 import { PlantillasGastoModule } from './modules/plantillas-gasto/plantillas-gasto.module';
+import { DocumentosModule } from './modules/documentos/documentos.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { PlantillasGastoModule } from './modules/plantillas-gasto/plantillas-gas
     IntegracionesModule,
     DashboardModule,
     SearchModule,
+    DocumentosModule,
   ],
   providers: [
     {
