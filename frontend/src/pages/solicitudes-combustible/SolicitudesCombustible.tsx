@@ -314,12 +314,10 @@ export default function SolicitudesCombustible() {
           <h1 className="text-2xl font-bold text-gray-900">Solicitudes de Combustible</h1>
           <p className="text-gray-500">{solicitudes.length} solicitudes registradas</p>
         </div>
-        {(userRole === 'OPERADOR' || userRole === 'ADMIN') && (
-          <button onClick={() => setMostrarFormulario(true)} className="btn-primary flex items-center gap-2">
-            <PlusIcon className="w-5 h-5" />
-            Nueva Solicitud
-          </button>
-        )}
+        <button onClick={() => setMostrarFormulario(true)} className="btn-primary flex items-center gap-2">
+          <PlusIcon className="w-5 h-5" />
+          Nueva Solicitud
+        </button>
       </div>
 
       {/* Estadísticas */}
