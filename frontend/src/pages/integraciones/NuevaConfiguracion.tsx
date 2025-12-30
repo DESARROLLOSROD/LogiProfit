@@ -39,15 +39,21 @@ export default function NuevaConfiguracion() {
       return false;
     }
 
-    // Validar que los campos obligatorios estén mapeados
-    const camposObligatorios = ['clienteNombre', 'origen', 'destino', 'precioCliente'];
-    const faltantes = camposObligatorios.filter((campo) => !mapeos[campo]);
+    // Validar que al menos el folio esté mapeado (único campo realmente obligatorio)
+    if (!mapeos['folio']) {
+      toast.error('El campo "folio" es obligatorio para identificar los registros');
+      return false;
+    }
+
+    // Advertir sobre campos recomendados faltantes (pero no bloquear)
+    const camposRecomendados = ['clienteNombre', 'origen', 'destino', 'precioCliente'];
+    const faltantes = camposRecomendados.filter((campo) => !mapeos[campo]);
 
     if (faltantes.length > 0) {
-      toast.error(
-        `Debes mapear los siguientes campos obligatorios: ${faltantes.join(', ')}`,
-      );
-      return false;
+      const mensaje = `Campos recomendados sin mapear: ${faltantes.join(', ')}. ¿Continuar de todos modos?`;
+      if (!confirm(mensaje)) {
+        return false;
+      }
     }
 
     return true;

@@ -3,6 +3,7 @@ interface Campo {
   key: string;
   label: string;
   obligatorio: boolean;
+  recomendado?: boolean;
   descripcion?: string;
 }
 
@@ -15,31 +16,35 @@ const CAMPOS_LOGIPROFIT: Campo[] = [
   {
     key: 'folio',
     label: 'Folio',
-    obligatorio: false,
-    descripcion: 'Número de folio del flete (ej: F-00001)',
+    obligatorio: true,
+    descripcion: 'Número de folio del flete (ej: F-00001) - OBLIGATORIO para identificar registros',
   },
   {
     key: 'clienteNombre',
     label: 'Nombre del Cliente',
-    obligatorio: true,
+    obligatorio: false,
+    recomendado: true,
     descripcion: 'Nombre completo del cliente',
   },
   {
     key: 'origen',
     label: 'Origen',
-    obligatorio: true,
+    obligatorio: false,
+    recomendado: true,
     descripcion: 'Ciudad o ubicación de origen',
   },
   {
     key: 'destino',
     label: 'Destino',
-    obligatorio: true,
+    obligatorio: false,
+    recomendado: true,
     descripcion: 'Ciudad o ubicación de destino',
   },
   {
     key: 'precioCliente',
     label: 'Precio al Cliente',
-    obligatorio: true,
+    obligatorio: false,
+    recomendado: true,
     descripcion: 'Monto a cobrar al cliente',
   },
   {
@@ -87,9 +92,13 @@ export default function MapeoColumnas({ mapeos, onChange }: MapeoColumnasProps) 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
         <p className="text-sm text-blue-800">
           <strong>Instrucciones:</strong> Mapea los campos de LogiProfit con los
-          nombres de las columnas en tu archivo de Aspel/Microsip. Los campos
-          marcados con <span className="text-red-600">*</span> son obligatorios.
+          nombres de las columnas en tu archivo de Aspel/Microsip.
         </p>
+        <ul className="mt-2 text-sm text-blue-800 space-y-1 ml-4">
+          <li>• <span className="text-red-600 font-semibold">Obligatorio:</span> Solo el campo "Folio" es requerido</li>
+          <li>• <span className="text-yellow-700 font-semibold">Recomendado:</span> Cliente, Origen, Destino y Precio mejoran la funcionalidad</li>
+          <li>• Los demás campos son opcionales según tus necesidades</li>
+        </ul>
       </div>
 
       <div className="grid gap-4">
@@ -103,6 +112,11 @@ export default function MapeoColumnas({ mapeos, onChange }: MapeoColumnasProps) 
                 {campo.label}
                 {campo.obligatorio && (
                   <span className="text-red-600 ml-1">*</span>
+                )}
+                {campo.recomendado && (
+                  <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
+                    Recomendado
+                  </span>
                 )}
               </label>
               {campo.descripcion && (

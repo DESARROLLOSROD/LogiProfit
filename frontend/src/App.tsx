@@ -13,6 +13,7 @@ import Register from './pages/auth/Register'
 
 // Dashboard Pages
 import Dashboard from './pages/Dashboard'
+import Pendientes from './pages/Pendientes'
 import Cotizaciones from './pages/cotizaciones/Cotizaciones'
 import CotizacionDetalle from './pages/cotizaciones/CotizacionDetalle'
 import NuevaCotizacionMejorada from './pages/cotizaciones/NuevaCotizacionMejorada'
@@ -86,7 +87,8 @@ export default function App() {
         }
       >
         <Route path="/" element={<Dashboard />} />
-        
+        <Route path="/pendientes" element={<Pendientes />} />
+
         {/* Cotizaciones */}
         <Route path="/cotizaciones" element={<Cotizaciones />} />
         <Route path="/cotizaciones/nueva" element={<NuevaCotizacionMejorada />} />

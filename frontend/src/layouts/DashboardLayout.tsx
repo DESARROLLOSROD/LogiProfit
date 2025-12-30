@@ -14,10 +14,12 @@ import {
   XMarkIcon,
   ClipboardDocumentListIcon,
   ArrowsRightLeftIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon },
+  { name: 'Pendientes', href: '/pendientes', icon: ClockIcon },
   { name: 'Cotizaciones', href: '/cotizaciones', icon: DocumentTextIcon },
   { name: 'Fletes', href: '/fletes', icon: ClipboardDocumentListIcon },
   { name: 'Camiones', href: '/camiones', icon: TruckIcon },
