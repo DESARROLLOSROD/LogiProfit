@@ -11,6 +11,7 @@ import {
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import FleteChecklist from '../../components/FleteChecklist'
+import FacturacionFlete from '../../components/FacturacionFlete'
 
 interface Flete {
   id: number
@@ -552,6 +553,15 @@ export default function FleteDetalle() {
       {/* Checklist */}
       <div className="mb-6">
         <FleteChecklist fleteId={flete.id} />
+      </div>
+
+      {/* Facturación */}
+      <div className="mb-6">
+        <FacturacionFlete
+          fleteId={flete.id}
+          precioCliente={flete.precioCliente}
+          estadoFlete={flete.estado}
+        />
       </div>
 
       {/* Comparativa Estimado vs Real */}
