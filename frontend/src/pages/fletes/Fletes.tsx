@@ -147,7 +147,8 @@ export default function Fletes() {
     return Number(flete.precioCliente || 0) - totalGastos
   }
 
-  const getEstadoBadge = (estado: string) => {
+  const getEstadoBadge = (estado: string | undefined) => {
+    if (!estado) return 'badge-gray'
     const badges: Record<string, string> = {
       PLANEADO: 'badge-gray',
       EN_CURSO: 'badge-info',
