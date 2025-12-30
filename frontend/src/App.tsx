@@ -31,6 +31,9 @@ import NuevaConfiguracion from './pages/integraciones/NuevaConfiguracion'
 import ImportarArchivo from './pages/integraciones/ImportarArchivo'
 import CompararArchivo from './pages/integraciones/CompararArchivo'
 import EditarCotizacion from './pages/cotizaciones/EditarCotizacion'
+import Facturas from './pages/facturas/Facturas'
+import Documentos from './pages/documentos/Documentos'
+import SolicitudesCombustible from './pages/solicitudes-combustible/SolicitudesCombustible'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
@@ -121,6 +124,15 @@ export default function App() {
         <Route path="/integraciones/editar/:id" element={<NuevaConfiguracion />} />
         <Route path="/integraciones/importar" element={<ImportarArchivo />} />
         <Route path="/integraciones/comparar" element={<CompararArchivo />} />
+
+        {/* Facturación */}
+        <Route path="/facturas" element={<Facturas />} />
+
+        {/* Documentos de Vehículos */}
+        <Route path="/documentos" element={<Documentos />} />
+
+        {/* Solicitudes de Combustible */}
+        <Route path="/solicitudes-combustible" element={<SolicitudesCombustible />} />
 
         {/* Configuración */}
         <Route path="/configuracion" element={<Configuracion />} />

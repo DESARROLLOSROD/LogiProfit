@@ -6,6 +6,9 @@ import {
   ExclamationTriangleIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
+  BanknotesIcon,
+  DocumentDuplicateIcon,
+  BeakerIcon,
 } from '@heroicons/react/24/outline'
 import {
   BarChart,
@@ -35,6 +38,20 @@ interface DashboardData {
     totalFletesMes: number
     fletesActivos: number
     fletesConPerdida: number
+  }
+  // Nuevos datos
+  facturas?: {
+    pendientes: number
+    vencidas: number
+    montoPendiente: number
+  }
+  documentos?: {
+    porVencer: number
+    vencidos: number
+  }
+  combustible?: {
+    pendientes: number
+    montoPendiente: number
   }
   tendenciaMensual: Array<{
     mes: number
@@ -69,7 +86,14 @@ export default function Dashboard() {
 
   const fetchDashboard = async () => {
     try {
-      const response = await api.get('/reportes/dashboard')
+      const [dashboardRes, facturasRes, documentosRes, combustibleRes] = await Promise.all([
+        api.get('/reportes/dashboard'),
+        api.get('/facturas/estadisticas').catch(() => ({ data: null })),
+        api.get('/documentos/estadisticas').catch(() => ({ data: null })),
+        api.get('/solicitudes-combustible/estadisticas').catch(() => ({ data: null })),
+      ])
+
+      const response = dashboardRes
 
       // Convertir campos Decimal de Prisma (vienen como strings) a números
       const rawData = response.data
@@ -82,6 +106,19 @@ export default function Dashboard() {
           gastosMes: Number(rawData.resumen.gastosMes) || 0,
           margenPromedio: Number(rawData.resumen.margenPromedio) || 0,
         },
+        facturas: facturasRes.data ? {
+          pendientes: facturasRes.data.pendientes || 0,
+          vencidas: facturasRes.data.vencidas || 0,
+          montoPendiente: Number(facturasRes.data.montoPendiente) || 0,
+        } : undefined,
+        documentos: documentosRes.data ? {
+          porVencer: documentosRes.data.porVencer || 0,
+          vencidos: documentosRes.data.vencidos || 0,
+        } : undefined,
+        combustible: combustibleRes.data ? {
+          pendientes: combustibleRes.data.pendientes || 0,
+          montoPendiente: Number(combustibleRes.data.montoTotal) || 0,
+        } : undefined,
         tendenciaMensual: rawData.tendenciaMensual.map((item: any) => ({
           ...item,
           ingresos: Number(item.ingresos) || 0,
@@ -354,6 +391,77 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Alertas de Módulos Nuevos */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Alertas de Facturación */}
+        {data.facturas && (data.facturas.vencidas > 0 || data.facturas.pendientes > 0) && (
+          <Link to="/facturas" className="card border-orange-200 bg-orange-50 hover:shadow-md transition-shadow">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-orange-100">
+                <BanknotesIcon className="w-6 h-6 text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-orange-900 mb-1">Facturación</h4>
+                {data.facturas.vencidas > 0 && (
+                  <p className="text-sm text-orange-700">
+                    {data.facturas.vencidas} factura{data.facturas.vencidas > 1 ? 's' : ''} vencida{data.facturas.vencidas > 1 ? 's' : ''}
+                  </p>
+                )}
+                {data.facturas.pendientes > 0 && (
+                  <p className="text-sm text-orange-700">
+                    {data.facturas.pendientes} pendiente{data.facturas.pendientes > 1 ? 's' : ''} ({formatMoney(data.facturas.montoPendiente)})
+                  </p>
+                )}
+              </div>
+            </div>
+          </Link>
+        )}
+
+        {/* Alertas de Documentos */}
+        {data.documentos && (data.documentos.vencidos > 0 || data.documentos.porVencer > 0) && (
+          <Link to="/documentos" className="card border-yellow-200 bg-yellow-50 hover:shadow-md transition-shadow">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-yellow-100">
+                <DocumentDuplicateIcon className="w-6 h-6 text-yellow-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-yellow-900 mb-1">Documentos de Vehículos</h4>
+                {data.documentos.vencidos > 0 && (
+                  <p className="text-sm text-yellow-700">
+                    {data.documentos.vencidos} vencido{data.documentos.vencidos > 1 ? 's' : ''}
+                  </p>
+                )}
+                {data.documentos.porVencer > 0 && (
+                  <p className="text-sm text-yellow-700">
+                    {data.documentos.porVencer} por vencer (30 días)
+                  </p>
+                )}
+              </div>
+            </div>
+          </Link>
+        )}
+
+        {/* Alertas de Combustible */}
+        {data.combustible && data.combustible.pendientes > 0 && (
+          <Link to="/solicitudes-combustible" className="card border-blue-200 bg-blue-50 hover:shadow-md transition-shadow">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-blue-100">
+                <BeakerIcon className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-blue-900 mb-1">Solicitudes de Combustible</h4>
+                <p className="text-sm text-blue-700">
+                  {data.combustible.pendientes} solicitud{data.combustible.pendientes > 1 ? 'es' : ''} pendiente{data.combustible.pendientes > 1 ? 's' : ''}
+                </p>
+                <p className="text-sm text-blue-700">
+                  Monto: {formatMoney(data.combustible.montoPendiente)}
+                </p>
+              </div>
+            </div>
+          </Link>
+        )}
+      </div>
 
       {/* Quick Actions */}
       <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
