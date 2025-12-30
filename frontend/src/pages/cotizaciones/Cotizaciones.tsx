@@ -21,9 +21,8 @@ interface Cotizacion {
   cliente: { id: number; nombre: string }
   origen: string
   destino: string
+  kmEstimado: number
   precioCotizado: number
-  utilidadEsperada: number
-  margenEsperado: number
   estado: string
   createdAt: string
 }
@@ -44,7 +43,7 @@ export default function Cotizaciones() {
   const itemsPorPagina = 10
 
   // Ordenamiento
-  const [ordenarPor, setOrdenarPor] = useState<'fecha' | 'folio' | 'precio' | 'margen'>('fecha')
+  const [ordenarPor, setOrdenarPor] = useState<'fecha' | 'folio' | 'precio'>('fecha')
   const [ordenDireccion, setOrdenDireccion] = useState<'asc' | 'desc'>('desc')
 
   useEffect(() => {
@@ -109,14 +108,6 @@ export default function Cotizaciones() {
       resultado = resultado.filter((cot) => cot.cliente.id === advancedFilters.clienteId)
     }
 
-    // Filtro por margen
-    if (advancedFilters.margenMin !== undefined) {
-      resultado = resultado.filter((cot) => cot.margenEsperado >= advancedFilters.margenMin!)
-    }
-    if (advancedFilters.margenMax !== undefined) {
-      resultado = resultado.filter((cot) => cot.margenEsperado <= advancedFilters.margenMax!)
-    }
-
     // Filtro por precio
     if (advancedFilters.precioMin !== undefined) {
       resultado = resultado.filter((cot) => cot.precioCotizado >= advancedFilters.precioMin!)
@@ -144,9 +135,6 @@ export default function Cotizaciones() {
         case 'precio':
           compareValue = a.precioCotizado - b.precioCotizado
           break
-        case 'margen':
-          compareValue = a.margenEsperado - b.margenEsperado
-          break
       }
 
       return ordenDireccion === 'asc' ? compareValue : -compareValue
@@ -155,7 +143,7 @@ export default function Cotizaciones() {
     return resultado
   }, [cotizaciones, debouncedBusqueda, filtroEstado, advancedFilters, ordenarPor, ordenDireccion])
 
-  const toggleOrden = useCallback((campo: 'fecha' | 'folio' | 'precio' | 'margen') => {
+  const toggleOrden = useCallback((campo: 'fecha' | 'folio' | 'precio') => {
     if (ordenarPor === campo) {
       setOrdenDireccion(ordenDireccion === 'asc' ? 'desc' : 'asc')
     } else {
@@ -321,21 +309,6 @@ export default function Cotizaciones() {
                     ))}
                 </div>
               </th>
-              <th>Utilidad</th>
-              <th
-                className="cursor-pointer hover:bg-gray-100"
-                onClick={() => toggleOrden('margen')}
-              >
-                <div className="flex items-center gap-1">
-                  Margen
-                  {ordenarPor === 'margen' &&
-                    (ordenDireccion === 'asc' ? (
-                      <ChevronUpIcon className="w-4 h-4" />
-                    ) : (
-                      <ChevronDownIcon className="w-4 h-4" />
-                    ))}
-                </div>
-              </th>
               <th>Estado</th>
               <th
                 className="cursor-pointer hover:bg-gray-100"
@@ -357,7 +330,7 @@ export default function Cotizaciones() {
           <tbody className="bg-white divide-y divide-gray-200">
             {cotizacionesPaginadas.length === 0 ? (
               <tr>
-                <td colSpan={9} className="text-center py-8 text-gray-500">
+                <td colSpan={7} className="text-center py-8 text-gray-500">
                   {busqueda || filtroEstado !== 'TODAS'
                     ? 'No se encontraron cotizaciones con los filtros aplicados'
                     : 'No hay cotizaciones registradas'}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Scale, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Scale, AlertCircle, CheckCircle, XCircle, Download, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { useIntegracionesStore } from '../../stores/integracionesStore';
 import FileDropzone from '../../components/integraciones/FileDropzone';
 import api from '../../lib/api';
@@ -38,6 +38,10 @@ export default function CompararArchivo() {
   const [archivo, setArchivo] = useState<File | null>(null);
   const [resultado, setResultado] = useState<ComparacionResult | null>(null);
   const [isComparing, setIsComparing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [foliosSeleccionados, setFoliosSeleccionados] = useState<string[]>([]);
+  const [gastosExpandidos, setGastosExpandidos] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchConfiguraciones();
@@ -69,6 +73,88 @@ export default function CompararArchivo() {
     } finally {
       setIsComparing(false);
     }
+  };
+
+  const handleSincronizar = async () => {
+    if (!archivo || !configuracionId || foliosSeleccionados.length === 0) {
+      toast.error('Selecciona al menos un folio para sincronizar');
+      return;
+    }
+
+    if (!confirm(`¿Actualizar ${foliosSeleccionados.length} folios con los datos de Aspel/Microsip?`)) {
+      return;
+    }
+
+    setIsSyncing(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', archivo);
+      formData.append('configuracionMapeoId', String(configuracionId));
+      formData.append('folios', JSON.stringify(foliosSeleccionados));
+
+      const response = await api.post('/integraciones/sincronizar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      toast.success(`${response.data.actualizados} folios actualizados correctamente`);
+      if (response.data.errores.length > 0) {
+        toast.error(`${response.data.errores.length} errores al sincronizar`);
+      }
+
+      // Limpiar selección y volver a comparar
+      setFoliosSeleccionados([]);
+      handleComparar();
+    } catch (error: any) {
+      console.error('Error al sincronizar:', error);
+      toast.error(error.response?.data?.message || 'Error al sincronizar folios');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleExportarComparacion = async () => {
+    if (!resultado) return;
+
+    setIsExporting(true);
+
+    try {
+      const response = await api.post('/integraciones/exportar-comparacion', resultado, {
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `comparacion_${new Date().getTime()}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Comparación exportada a Excel');
+    } catch (error: any) {
+      console.error('Error al exportar:', error);
+      toast.error('Error al exportar comparación');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const toggleSeleccionFolio = (folio: string) => {
+    if (foliosSeleccionados.includes(folio)) {
+      setFoliosSeleccionados(foliosSeleccionados.filter(f => f !== folio));
+    } else {
+      setFoliosSeleccionados([...foliosSeleccionados, folio]);
+    }
+  };
+
+  const toggleGastos = (folio: string) => {
+    setGastosExpandidos(prev => ({ ...prev, [folio]: !prev[folio] }));
   };
 
   const formatMoney = (value: number) => {
@@ -173,76 +259,133 @@ export default function CompararArchivo() {
                   </p>
                 </div>
               </div>
+
+              {/* Botones de Acción */}
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={handleExportarComparacion}
+                  disabled={isExporting}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                >
+                  <Download className="h-4 w-4" />
+                  {isExporting ? 'Exportando...' : 'Exportar a Excel'}
+                </button>
+              </div>
             </div>
 
             {/* Fletes con Diferencias */}
             {resultado.diferencias.length > 0 && (
               <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-yellow-600" />
-                  Diferencias Detectadas ({resultado.diferencias.length})
-                </h3>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Folio
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Campo
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Aspel/Microsip
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          LogiProfit
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Gastos Asociados
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {resultado.diferencias.map((diff: DiferenciaFlete, idx: number) => {
-                        const gastos = resultado.gastosPorFolio[diff.folio];
-                        return (
-                          <tr key={idx} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                              {diff.folio}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
-                              {diff.campo === 'precioCliente' ? 'Precio' :
-                               diff.campo === 'kmReales' ? 'Kilómetros' :
-                               diff.campo}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-blue-900 font-semibold">
-                              {diff.campo === 'precioCliente'
-                                ? formatMoney(diff.valorArchivo)
-                                : diff.valorArchivo}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-purple-900 font-semibold">
-                              {diff.campo === 'precioCliente'
-                                ? formatMoney(diff.valorLogiProfit)
-                                : diff.valorLogiProfit}
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              {gastos ? (
-                                <div className="text-gray-700">
-                                  <span className="font-semibold">{formatMoney(gastos.totalGastos)}</span>
-                                  <span className="text-xs text-gray-500 ml-1">
-                                    ({gastos.cantidadGastos} gastos)
-                                  </span>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-yellow-600" />
+                    Diferencias Detectadas ({resultado.diferencias.length})
+                  </h3>
+                  {foliosSeleccionados.length > 0 && (
+                    <button
+                      onClick={handleSincronizar}
+                      disabled={isSyncing}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                      {isSyncing ? 'Sincronizando...' : `Sincronizar ${foliosSeleccionados.length} Seleccionados`}
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  {/* Agrupar diferencias por folio */}
+                  {Object.entries(
+                    resultado.diferencias.reduce((acc: Record<string, DiferenciaFlete[]>, diff) => {
+                      if (!acc[diff.folio]) acc[diff.folio] = [];
+                      acc[diff.folio].push(diff);
+                      return acc;
+                    }, {})
+                  ).map(([folio, difs]) => {
+                    const gastos = resultado.gastosPorFolio[folio];
+                    const isSelected = foliosSeleccionados.includes(folio);
+                    const isExpanded = gastosExpandidos[folio];
+
+                    return (
+                      <div key={folio} className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="bg-gray-50 p-4">
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleSeleccionFolio(folio)}
+                              className="mt-1 h-4 w-4 text-blue-600 rounded"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-lg font-semibold text-gray-900">{folio}</h4>
+                                {gastos && (
+                                  <button
+                                    onClick={() => toggleGastos(folio)}
+                                    className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+                                  >
+                                    {formatMoney(gastos.totalGastos)} ({gastos.cantidadGastos} gastos)
+                                    {isExpanded ? (
+                                      <ChevronUp className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4" />
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Diferencias */}
+                              <div className="mt-2 space-y-1">
+                                {difs.map((diff: DiferenciaFlete, idx: number) => (
+                                  <div key={idx} className="text-sm grid grid-cols-3 gap-4">
+                                    <span className="text-gray-600">
+                                      {diff.campo === 'precioCliente' ? 'Precio' :
+                                       diff.campo === 'kmReales' ? 'Kilómetros' :
+                                       diff.campo}:
+                                    </span>
+                                    <span className="text-blue-700 font-medium">
+                                      Aspel: {diff.campo === 'precioCliente'
+                                        ? formatMoney(diff.valorArchivo)
+                                        : diff.valorArchivo}
+                                    </span>
+                                    <span className="text-purple-700 font-medium">
+                                      LogiProfit: {diff.campo === 'precioCliente'
+                                        ? formatMoney(diff.valorLogiProfit)
+                                        : diff.valorLogiProfit}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Detalle de Gastos (Expandible) */}
+                              {gastos && isExpanded && (
+                                <div className="mt-3 border-t border-gray-200 pt-3">
+                                  <p className="text-xs font-semibold text-gray-700 mb-2">
+                                    DETALLE DE GASTOS:
+                                  </p>
+                                  <div className="space-y-1">
+                                    {gastos.gastos.map((gasto: any, idx: number) => (
+                                      <div
+                                        key={idx}
+                                        className="flex items-center justify-between text-xs bg-white px-3 py-2 rounded"
+                                      >
+                                        <span className="font-medium text-gray-700">{gasto.tipo}</span>
+                                        <span className="text-gray-900 font-semibold">
+                                          {formatMoney(gasto.monto)}
+                                        </span>
+                                        <span className="text-gray-500 text-xs">
+                                          {gasto.descripcion || '—'}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                              ) : (
-                                <span className="text-gray-400 text-xs">Sin gastos</span>
                               )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

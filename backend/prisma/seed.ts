@@ -180,7 +180,7 @@ async function main() {
 
   console.log('✅ Choferes creados:', choferes.length);
 
-  // Crear cotización (con campos actualizados)
+  // Crear cotización (simplificada)
   const cotizacion = await prisma.cotizacion.create({
     data: {
       empresaId: empresa.id,
@@ -191,25 +191,10 @@ async function main() {
       tipoCarga: 'Carga general',
       pesoCarga: 20,
       dimensiones: '12 x 2.5 x 2.6 M',
-      kmCargado: 900,
-      kmVacio: 900,
-      kmTotal: 1800,
+      kmEstimado: 1800,
       precioCotizado: 45000,
-      dieselEstimado: 6000,
-      casetasEstimado: 4500,
-      viaticosEstimado: 1500,
-      salarioEstimado: 3600,
-      permisoEstimado: 0,
-      porcentajeMantenimiento: 25,
-      montoMantenimiento: 3900,
-      porcentajeIndirectos: 20,
-      montoIndirectos: 3120,
-      requiereCarroPiloto: false,
-      totalCarroPiloto: 0,
-      costoTotal: 22620,
-      utilidadEsperada: 22380,
-      margenEsperado: 49.73,
       estado: 'APROBADA',
+      notas: 'Cotización de ejemplo para viaje CDMX - Monterrey',
     },
   });
 

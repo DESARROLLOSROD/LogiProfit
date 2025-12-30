@@ -19,7 +19,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { CotizacionesService } from './cotizaciones.service';
-import { CreateCotizacionDto, UpdateCotizacionDto, SimularCostosDto, CreateConceptoDto, UpdateConceptoDto } from './dto/cotizacion.dto';
+import { CreateCotizacionDto, UpdateCotizacionDto, CreateConceptoDto, UpdateConceptoDto } from './dto/cotizacion.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EstadoCotizacion } from '@prisma/client';
 
@@ -30,13 +30,6 @@ import { EstadoCotizacion } from '@prisma/client';
 @Controller('cotizaciones')
 export class CotizacionesController {
   constructor(private readonly cotizacionesService: CotizacionesService) { }
-
-  @Post('simular')
-  @ApiOperation({ summary: 'Simular costos de una cotización' })
-  @ApiResponse({ status: 200, description: 'Simulación de costos y utilidad' })
-  simularCostos(@Request() req: any, @Body() dto: SimularCostosDto) {
-    return this.cotizacionesService.simularCostos(req.user.empresaId, dto);
-  }
 
   @Post()
   @ApiOperation({ summary: 'Crear nueva cotización' })

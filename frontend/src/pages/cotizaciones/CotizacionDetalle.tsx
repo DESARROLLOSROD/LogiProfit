@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  TruckIcon,
-  BanknotesIcon,
+  ArrowLeftIcon,
   DocumentTextIcon,
   PlusIcon,
   PencilIcon,
-  TrashIcon
+  TrashIcon,
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
-import { generarPDFCotizacion } from '../../lib/pdfGenerator'
-import Breadcrumbs from '../../components/Breadcrumbs'
 
 interface Concepto {
   id: number
@@ -29,39 +26,24 @@ interface Cotizacion {
   cliente: { id: number; nombre: string }
   origen: string
   destino: string
-
-  // Información de la carga
   tipoCarga?: string
   pesoCarga?: number
-  largo?: number
-  ancho?: number
-  alto?: number
-
-  // Kilometraje
-  kmCargado: number
-  kmVacio?: number
-  kmTotal: number
-
-  // Totales
-  costoTotal: number
+  dimensiones?: string
+  kmEstimado: number
   precioCotizado: number
-  utilidadEsperada: number
-  margenEsperado: number
-
-  // Costos desglosados
-  costoDieselCargado?: number
-  costoDieselVacio?: number
-  costoCasetasTotal?: number
-  costoViaticosTotal?: number
-  costoMantenimiento?: number
-  costoIndirectos?: number
-  costoCarroPilotoTotal?: number
-  requiereCarroPiloto?: boolean
-
   estado: string
   notas?: string
+  validoHasta?: string
   createdAt: string
   conceptos?: Concepto[]
+}
+
+const estadoColors = {
+  BORRADOR: 'bg-gray-100 text-gray-800',
+  ENVIADA: 'bg-blue-100 text-blue-800',
+  APROBADA: 'bg-green-100 text-green-800',
+  RECHAZADA: 'bg-red-100 text-red-800',
+  CONVERTIDA: 'bg-purple-100 text-purple-800',
 }
 
 export default function CotizacionDetalle() {
@@ -69,17 +51,19 @@ export default function CotizacionDetalle() {
   const navigate = useNavigate()
   const [cotizacion, setCotizacion] = useState<Cotizacion | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Estado modal
   const [showEstadoModal, setShowEstadoModal] = useState(false)
   const [nuevoEstado, setNuevoEstado] = useState('')
 
-  // Conceptos state
+  // Concepto modal
   const [showConceptoModal, setShowConceptoModal] = useState(false)
   const [editingConcepto, setEditingConcepto] = useState<Concepto | null>(null)
   const [conceptoForm, setConceptoForm] = useState({
     descripcion: '',
-    cantidad: 0,
+    cantidad: '',
     unidad: '',
-    precioUnit: 0,
+    precioUnit: '',
   })
 
   useEffect(() => {
@@ -89,49 +73,13 @@ export default function CotizacionDetalle() {
   const fetchCotizacion = async () => {
     try {
       const response = await api.get(`/cotizaciones/${id}`)
-
-      // Convertir campos Decimal de Prisma (vienen como strings) a números
-      const data = response.data
-      const cotizacionConvertida = {
-        ...data,
-        // Kilometraje
-        kmCargado: Number(data.kmCargado) || 0,
-        kmVacio: Number(data.kmVacio) || 0,
-        kmTotal: Number(data.kmTotal) || 0,
-
-        // Totales
-        costoTotal: Number(data.costoTotal) || 0,
-        precioCotizado: Number(data.precioCotizado) || 0,
-        utilidadEsperada: Number(data.utilidadEsperada) || 0,
-        margenEsperado: Number(data.margenEsperado) || 0,
-
-        // Información de carga
-        pesoCarga: Number(data.pesoCarga) || 0,
-
-        // Conceptos
-        conceptos: data.conceptos?.map((c: any) => ({
-          ...c,
-          cantidad: Number(c.cantidad) || 0,
-          precioUnit: Number(c.precioUnit) || 0,
-          subtotal: Number(c.subtotal) || 0,
-        })) || [],
-      }
-
-      setCotizacion(cotizacionConvertida)
-    } catch {
+      setCotizacion(response.data)
+    } catch (error) {
+      console.error('Error al cargar cotización:', error)
+      toast.error('Error al cargar cotización')
       navigate('/cotizaciones')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const convertirAFlete = async () => {
-    try {
-      const response = await api.post(`/cotizaciones/${id}/convertir-flete`)
-      toast.success('¡Flete creado exitosamente!')
-      navigate(`/fletes/${response.data.id}`)
-    } catch {
-      // Error handled by interceptor
     }
   }
 
@@ -147,252 +95,196 @@ export default function CotizacionDetalle() {
       setShowEstadoModal(false)
       setNuevoEstado('')
       fetchCotizacion()
-    } catch {
-      // Error handled by interceptor
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al cambiar estado')
     }
   }
 
-  const formatMoney = (amount: number) => {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount)
+  const convertirAFlete = async () => {
+    if (!confirm('¿Convertir esta cotización a flete?')) return
+
+    try {
+      const response = await api.post(`/cotizaciones/${id}/convertir-flete`)
+      toast.success('¡Flete creado exitosamente!')
+      navigate(`/fletes/${response.data.id}`)
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al convertir a flete')
+    }
   }
 
-  // Conceptos functions
   const openConceptoModal = (concepto?: Concepto) => {
     if (concepto) {
       setEditingConcepto(concepto)
       setConceptoForm({
         descripcion: concepto.descripcion,
-        cantidad: concepto.cantidad,
+        cantidad: String(concepto.cantidad),
         unidad: concepto.unidad,
-        precioUnit: concepto.precioUnit,
+        precioUnit: String(concepto.precioUnit),
       })
     } else {
       setEditingConcepto(null)
       setConceptoForm({
         descripcion: '',
-        cantidad: 0,
+        cantidad: '',
         unidad: '',
-        precioUnit: 0,
+        precioUnit: '',
       })
     }
     setShowConceptoModal(true)
   }
 
-  const closeConceptoModal = () => {
-    setShowConceptoModal(false)
-    setEditingConcepto(null)
-    setConceptoForm({
-      descripcion: '',
-      cantidad: 0,
-      unidad: '',
-      precioUnit: 0,
-    })
-  }
-
-  const saveConcepto = async () => {
-    if (!conceptoForm.descripcion || !conceptoForm.unidad || conceptoForm.cantidad <= 0 || conceptoForm.precioUnit <= 0) {
-      toast.error('Completa todos los campos correctamente')
+  const guardarConcepto = async () => {
+    if (!conceptoForm.descripcion || !conceptoForm.cantidad || !conceptoForm.unidad || !conceptoForm.precioUnit) {
+      toast.error('Completa todos los campos')
       return
     }
 
     try {
+      const payload = {
+        descripcion: conceptoForm.descripcion,
+        cantidad: Number(conceptoForm.cantidad),
+        unidad: conceptoForm.unidad,
+        precioUnit: Number(conceptoForm.precioUnit),
+      }
+
       if (editingConcepto) {
-        await api.patch(`/cotizaciones/${id}/conceptos/${editingConcepto.id}`, conceptoForm)
+        await api.put(`/cotizaciones/${id}/conceptos/${editingConcepto.id}`, payload)
         toast.success('Concepto actualizado')
       } else {
-        await api.post(`/cotizaciones/${id}/conceptos`, conceptoForm)
+        await api.post(`/cotizaciones/${id}/conceptos`, payload)
         toast.success('Concepto agregado')
       }
-      closeConceptoModal()
+
+      setShowConceptoModal(false)
       fetchCotizacion()
-    } catch {
-      // Error handled by interceptor
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al guardar concepto')
     }
   }
 
-  const deleteConcepto = async (conceptoId: number) => {
+  const eliminarConcepto = async (conceptoId: number) => {
     if (!confirm('¿Eliminar este concepto?')) return
 
     try {
       await api.delete(`/cotizaciones/${id}/conceptos/${conceptoId}`)
       toast.success('Concepto eliminado')
       fetchCotizacion()
-    } catch {
-      // Error handled by interceptor
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al eliminar concepto')
     }
-  }
-
-  const exportarPDF = () => {
-    if (!cotizacion) return
-
-    generarPDFCotizacion({
-      folio: cotizacion.folio,
-      cliente: {
-        nombre: cotizacion.cliente.nombre,
-        rfc: undefined, // El backend no devuelve RFC del cliente en el detalle
-        email: undefined,
-      },
-      origen: cotizacion.origen,
-      destino: cotizacion.destino,
-      kmIda: cotizacion.kmCargado,
-      kmVuelta: cotizacion.kmVacio || 0,
-      precioCotizado: cotizacion.precioCotizado,
-      utilidadEsperada: cotizacion.utilidadEsperada,
-      margenEsperado: cotizacion.margenEsperado,
-      createdAt: cotizacion.createdAt,
-      costoDieselIda: cotizacion.costoDieselCargado,
-      costoDieselVuelta: cotizacion.costoDieselVacio,
-      costoCasetas: cotizacion.costoCasetasTotal,
-      costoViaticos: cotizacion.costoViaticosTotal,
-      costoMantenimiento: cotizacion.costoMantenimiento,
-      costosIndirectos: cotizacion.costoIndirectos,
-      costoAutoPiloto: cotizacion.costoCarroPilotoTotal,
-      costoTotal: cotizacion.costoTotal,
-      requiereAutoPiloto: cotizacion.requiereCarroPiloto ?? false,
-    })
-
-    toast.success('PDF generado exitosamente')
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex justify-center items-center h-64">
+        <div className="text-gray-500">Cargando...</div>
       </div>
     )
   }
 
   if (!cotizacion) return null
 
+  const totalConceptos = cotizacion.conceptos?.reduce((sum, c) => sum + c.subtotal, 0) || 0
+
   return (
     <div className="max-w-5xl mx-auto">
-      <Breadcrumbs
-        items={[
-          { label: 'Cotizaciones', path: '/cotizaciones' },
-          { label: cotizacion.folio },
-        ]}
-      />
-
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{cotizacion.folio}</h1>
-          <p className="text-gray-500">{cotizacion.cliente.nombre}</p>
-        </div>
-        <div className="flex gap-3">
-          {cotizacion.estado !== 'CONVERTIDA' && cotizacion.estado !== 'CANCELADA' && (
-            <>
-              <button onClick={() => setShowEstadoModal(true)} className="btn-secondary">
-                Cambiar Estado
-              </button>
-              {cotizacion.estado === 'APROBADA' && (
-                <button onClick={convertirAFlete} className="btn-primary">
-                  Convertir a Flete
-                </button>
-              )}
-            </>
-          )}
-          <button onClick={exportarPDF} className="btn-secondary">
-            Exportar PDF
-          </button>
+      <div className="mb-6">
+        <button
+          onClick={() => navigate('/cotizaciones')}
+          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+        >
+          <ArrowLeftIcon className="h-5 w-5 mr-2" />
+          Volver a cotizaciones
+        </button>
+
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{cotizacion.folio}</h1>
+            <p className="text-gray-600 mt-1">Cotización para {cotizacion.cliente.nombre}</p>
+          </div>
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${estadoColors[cotizacion.estado as keyof typeof estadoColors]}`}>
+            {cotizacion.estado}
+          </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Información del Viaje */}
-        <div className="card lg:col-span-2">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <TruckIcon className="w-5 h-5 text-primary-600" />
-            Información del Viaje
-          </h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Origen</p>
-              <p className="font-medium">{cotizacion.origen}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Destino</p>
-              <p className="font-medium">{cotizacion.destino}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Km Cargado</p>
-              <p className="font-medium">{cotizacion.kmCargado} km</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Km Vacío</p>
-              <p className="font-medium">{cotizacion.kmVacio || 0} km</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Km Total</p>
-              <p className="font-medium text-primary-600">{cotizacion.kmTotal} km</p>
-            </div>
-            {cotizacion.tipoCarga && (
-              <>
-                <div>
-                  <p className="text-sm text-gray-500">Tipo de Carga</p>
-                  <p className="font-medium">{cotizacion.tipoCarga}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Peso</p>
-                  <p className="font-medium">{cotizacion.pesoCarga} ton</p>
-                </div>
-              </>
-            )}
-            {cotizacion.largo && (
-              <div className="col-span-2">
-                <p className="text-sm text-gray-500">Dimensiones</p>
-                <p className="font-medium">
-                  {cotizacion.largo}m × {cotizacion.ancho}m × {cotizacion.alto}m
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Información Principal */}
+      <div className="bg-white shadow rounded-lg p-6 mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Información de la Cotización</h2>
 
-        {/* Estado y Resumen */}
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4">Estado</h3>
-          <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Cliente y Ruta */}
+          <div>
+            <label className="block text-sm font-medium text-gray-500">Cliente</label>
+            <p className="mt-1 text-gray-900">{cotizacion.cliente.nombre}</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-500">Ruta</label>
+            <p className="mt-1 text-gray-900">
+              {cotizacion.origen} → {cotizacion.destino}
+            </p>
+          </div>
+
+          {/* Carga */}
+          {cotizacion.tipoCarga && (
             <div>
-              <span className={`badge text-lg px-4 py-2 ${
-                cotizacion.estado === 'APROBADA' ? 'badge-success' :
-                cotizacion.estado === 'CONVERTIDA' ? 'badge-primary' :
-                'badge-gray'
-              }`}>
-                {cotizacion.estado}
-              </span>
+              <label className="block text-sm font-medium text-gray-500">Tipo de Carga</label>
+              <p className="mt-1 text-gray-900">{cotizacion.tipoCarga}</p>
             </div>
-            <div className="pt-4 border-t">
-              <p className="text-sm text-gray-500">Fecha de Creación</p>
-              <p className="font-medium">
-                {new Date(cotizacion.createdAt).toLocaleDateString('es-MX', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
+          )}
+
+          {cotizacion.pesoCarga && (
+            <div>
+              <label className="block text-sm font-medium text-gray-500">Peso</label>
+              <p className="mt-1 text-gray-900">{cotizacion.pesoCarga} toneladas</p>
+            </div>
+          )}
+
+          {cotizacion.dimensiones && (
+            <div>
+              <label className="block text-sm font-medium text-gray-500">Dimensiones</label>
+              <p className="mt-1 text-gray-900">{cotizacion.dimensiones}</p>
+            </div>
+          )}
+
+          {/* Kilometraje */}
+          <div>
+            <label className="block text-sm font-medium text-gray-500">Kilómetros Estimados</label>
+            <p className="mt-1 text-gray-900">{cotizacion.kmEstimado.toLocaleString()} km</p>
+          </div>
+
+          {/* Validez */}
+          {cotizacion.validoHasta && (
+            <div>
+              <label className="block text-sm font-medium text-gray-500">Válido Hasta</label>
+              <p className="mt-1 text-gray-900">
+                {new Date(cotizacion.validoHasta).toLocaleDateString('es-MX')}
               </p>
             </div>
-            {cotizacion.requiereCarroPiloto && (
-              <div className="pt-4 border-t">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                  Requiere Carro Piloto
-                </span>
-              </div>
-            )}
-          </div>
+          )}
         </div>
+
+        {/* Notas */}
+        {cotizacion.notas && (
+          <div className="mt-6 pt-6 border-t">
+            <label className="block text-sm font-medium text-gray-500 mb-2">Notas</label>
+            <p className="text-gray-900 whitespace-pre-wrap">{cotizacion.notas}</p>
+          </div>
+        )}
       </div>
 
       {/* Conceptos / Servicios */}
-      <div className="card mt-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <BanknotesIcon className="w-5 h-5 text-primary-600" />
-            Conceptos y Servicios
-          </h3>
-          {cotizacion.estado !== 'CONVERTIDA' && cotizacion.estado !== 'CANCELADA' && (
-            <button onClick={() => openConceptoModal()} className="btn-primary flex items-center gap-2">
-              <PlusIcon className="w-4 h-4" />
+      <div className="bg-white shadow rounded-lg p-6 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Conceptos / Servicios</h2>
+          {cotizacion.estado !== 'CONVERTIDA' && (
+            <button
+              onClick={() => openConceptoModal()}
+              className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <PlusIcon className="h-5 w-5" />
               Agregar Concepto
             </button>
           )}
@@ -403,260 +295,211 @@ export default function CotizacionDetalle() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servicio</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Cantidad</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unidad</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Unidad</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Precio Unit.</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Subtotal</th>
-                  {cotizacion.estado !== 'CONVERTIDA' && cotizacion.estado !== 'CANCELADA' && (
+                  {cotizacion.estado !== 'CONVERTIDA' && (
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
                   )}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {cotizacion.conceptos.map((concepto) => (
-                  <tr key={concepto.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{concepto.descripcion}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 text-right">{concepto.cantidad.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{concepto.unidad}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 text-right">{formatMoney(concepto.precioUnit)}</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right">{formatMoney(concepto.subtotal)}</td>
-                    {cotizacion.estado !== 'CONVERTIDA' && cotizacion.estado !== 'CANCELADA' && (
+                {cotizacion.conceptos.map(concepto => (
+                  <tr key={concepto.id}>
+                    <td className="px-4 py-3 text-sm text-gray-900">{concepto.descripcion}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 text-right">{concepto.cantidad}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 text-right">{concepto.unidad}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                      ${concepto.precioUnit.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">
+                      ${concepto.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </td>
+                    {cotizacion.estado !== 'CONVERTIDA' && (
                       <td className="px-4 py-3 text-sm text-right">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => openConceptoModal(concepto)}
-                            className="text-primary-600 hover:text-primary-900"
-                          >
-                            <PencilIcon className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteConcepto(concepto.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <TrashIcon className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => openConceptoModal(concepto)}
+                          className="text-blue-600 hover:text-blue-800 mr-3"
+                        >
+                          <PencilIcon className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => eliminarConcepto(concepto.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
                       </td>
                     )}
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="bg-gray-50">
-                <tr>
-                  <td colSpan={4} className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-                    Total Conceptos:
-                  </td>
-                  <td className="px-4 py-3 text-sm font-bold text-primary-600 text-right">
-                    {formatMoney(cotizacion.conceptos.reduce((sum, c) => sum + c.subtotal, 0))}
-                  </td>
-                  {cotizacion.estado !== 'CONVERTIDA' && cotizacion.estado !== 'CANCELADA' && <td></td>}
-                </tr>
-              </tfoot>
             </table>
+            <div className="mt-4 flex justify-end border-t pt-4">
+              <div className="text-right">
+                <p className="text-sm text-gray-500">Total Conceptos</p>
+                <p className="text-xl font-bold text-gray-900">
+                  ${totalConceptos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            <BanknotesIcon className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-            <p>No hay conceptos agregados</p>
-            <p className="text-sm">Agrega servicios como diesel, casetas, viáticos, etc.</p>
-          </div>
+          <p className="text-gray-500 text-center py-8">No hay conceptos agregados</p>
         )}
       </div>
 
-      {/* Resumen Financiero */}
-      <div className="card mt-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <DocumentTextIcon className="w-5 h-5 text-primary-600" />
-          Resumen Financiero
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="p-4 bg-red-50 rounded-lg border-2 border-red-200">
-            <p className="text-sm text-red-600 font-medium">Costo Total</p>
-            <p className="text-2xl font-bold text-red-700">{formatMoney(cotizacion.costoTotal)}</p>
-          </div>
-          <div className="p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
-            <p className="text-sm text-gray-600 font-medium">Precio Cotizado</p>
-            <p className="text-2xl font-bold text-gray-900">{formatMoney(cotizacion.precioCotizado)}</p>
-          </div>
-          <div className="p-4 bg-green-50 rounded-lg border-2 border-green-200">
-            <p className="text-sm text-green-600 font-medium">Utilidad Esperada</p>
-            <p className={`text-2xl font-bold ${
-              cotizacion.utilidadEsperada >= 0 ? 'text-green-700' : 'text-red-700'
-            }`}>
-              {formatMoney(cotizacion.utilidadEsperada)}
+      {/* Precio Cotizado */}
+      <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-sm text-green-700 font-medium">PRECIO COTIZADO AL CLIENTE</p>
+            <p className="text-3xl font-bold text-green-900 mt-1">
+              ${cotizacion.precioCotizado.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
             </p>
           </div>
-          <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
-            <p className="text-sm text-blue-600 font-medium">Margen</p>
-            <p className="text-2xl font-bold text-blue-700">
-              {(Number(cotizacion.margenEsperado) || 0).toFixed(1)}%
-            </p>
-          </div>
+          <DocumentTextIcon className="h-16 w-16 text-green-600 opacity-20" />
         </div>
       </div>
 
-      {/* Notas */}
-      {cotizacion.notas && (
-        <div className="card mt-6">
-          <h3 className="text-lg font-semibold mb-2">Notas</h3>
-          <p className="text-gray-700 whitespace-pre-wrap">{cotizacion.notas}</p>
-        </div>
-      )}
+      {/* Acciones */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => setShowEstadoModal(true)}
+          className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          disabled={cotizacion.estado === 'CONVERTIDA'}
+        >
+          Cambiar Estado
+        </button>
+
+        {cotizacion.estado === 'APROBADA' && (
+          <button
+            onClick={convertirAFlete}
+            className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+          >
+            Convertir a Flete
+          </button>
+        )}
+      </div>
 
       {/* Modal Cambiar Estado */}
       {showEstadoModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Cambiar Estado de Cotización</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="label">Estado Actual</label>
-                <div className="p-3 bg-gray-100 rounded-lg">
-                  <span className={`badge text-base px-3 py-1 ${
-                    cotizacion.estado === 'BORRADOR' ? 'badge-gray' :
-                    cotizacion.estado === 'ENVIADA' ? 'badge-info' :
-                    cotizacion.estado === 'APROBADA' ? 'badge-success' :
-                    cotizacion.estado === 'RECHAZADA' ? 'badge-danger' :
-                    'badge-warning'
-                  }`}>
-                    {cotizacion.estado}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="label">Nuevo Estado</label>
-                <select
-                  className="input"
-                  value={nuevoEstado}
-                  onChange={(e) => setNuevoEstado(e.target.value)}
-                >
-                  <option value="">-- Seleccionar --</option>
-                  {cotizacion.estado === 'BORRADOR' && (
-                    <>
-                      <option value="ENVIADA">ENVIADA - Enviada al cliente</option>
-                      <option value="CANCELADA">CANCELADA - Cancelar cotización</option>
-                    </>
-                  )}
-                  {cotizacion.estado === 'ENVIADA' && (
-                    <>
-                      <option value="APROBADA">APROBADA - Cliente aprobó</option>
-                      <option value="RECHAZADA">RECHAZADA - Cliente rechazó</option>
-                      <option value="CANCELADA">CANCELADA - Cancelar cotización</option>
-                    </>
-                  )}
-                  {cotizacion.estado === 'APROBADA' && (
-                    <>
-                      <option value="CANCELADA">CANCELADA - Cancelar cotización</option>
-                    </>
-                  )}
-                  {cotizacion.estado === 'RECHAZADA' && (
-                    <>
-                      <option value="ENVIADA">ENVIADA - Reenviar al cliente</option>
-                      <option value="CANCELADA">CANCELADA - Cancelar cotización</option>
-                    </>
-                  )}
-                </select>
-              </div>
-
-              {nuevoEstado && (
-                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm text-blue-900">
-                    {nuevoEstado === 'ENVIADA' && '📧 La cotización se marcará como enviada al cliente'}
-                    {nuevoEstado === 'APROBADA' && '✅ La cotización se podrá convertir en flete'}
-                    {nuevoEstado === 'RECHAZADA' && '❌ La cotización se marcará como rechazada'}
-                    {nuevoEstado === 'CANCELADA' && '🚫 La cotización se cancelará permanentemente'}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-2 mt-6">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Cambiar Estado</h3>
+            <select
+              value={nuevoEstado}
+              onChange={(e) => setNuevoEstado(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 mb-4"
+            >
+              <option value="">Selecciona un estado</option>
+              <option value="BORRADOR">BORRADOR</option>
+              <option value="ENVIADA">ENVIADA</option>
+              <option value="APROBADA">APROBADA</option>
+              <option value="RECHAZADA">RECHAZADA</option>
+            </select>
+            <div className="flex gap-3 justify-end">
               <button
                 onClick={() => {
                   setShowEstadoModal(false)
                   setNuevoEstado('')
                 }}
-                className="btn-secondary flex-1"
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Cancelar
               </button>
-              <button onClick={cambiarEstado} className="btn-primary flex-1">
-                Confirmar Cambio
+              <button
+                onClick={cambiarEstado}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Guardar
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal Agregar/Editar Concepto */}
+      {/* Modal Concepto */}
       {showConceptoModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">
-              {editingConcepto ? 'Editar Concepto' : 'Agregar Concepto'}
+              {editingConcepto ? 'Editar Concepto' : 'Nuevo Concepto'}
             </h3>
+
             <div className="space-y-4">
               <div>
-                <label className="label">Servicio / Descripción</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
                 <input
                   type="text"
-                  className="input"
-                  placeholder="Ej: Diesel, Casetas, Viáticos"
                   value={conceptoForm.descripcion}
-                  onChange={(e) => setConceptoForm({ ...conceptoForm, descripcion: e.target.value })}
+                  onChange={(e) => setConceptoForm({...conceptoForm, descripcion: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5"
+                  placeholder="Ej: Diesel"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="label">Cantidad</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
                   <input
                     type="number"
-                    className="input"
-                    placeholder="100"
-                    value={conceptoForm.cantidad || ''}
-                    onChange={(e) => setConceptoForm({ ...conceptoForm, cantidad: Number(e.target.value) })}
+                    value={conceptoForm.cantidad}
+                    onChange={(e) => setConceptoForm({...conceptoForm, cantidad: e.target.value})}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5"
+                    step="0.01"
                   />
                 </div>
                 <div>
-                  <label className="label">Unidad</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Unidad</label>
                   <input
                     type="text"
-                    className="input"
-                    placeholder="litros, km, servicio"
                     value={conceptoForm.unidad}
-                    onChange={(e) => setConceptoForm({ ...conceptoForm, unidad: e.target.value })}
+                    onChange={(e) => setConceptoForm({...conceptoForm, unidad: e.target.value})}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5"
+                    placeholder="Ej: litros"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="label">Precio Unitario</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Precio Unitario</label>
                 <input
                   type="number"
+                  value={conceptoForm.precioUnit}
+                  onChange={(e) => setConceptoForm({...conceptoForm, precioUnit: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5"
                   step="0.01"
-                  className="input"
-                  placeholder="24.50"
-                  value={conceptoForm.precioUnit || ''}
-                  onChange={(e) => setConceptoForm({ ...conceptoForm, precioUnit: Number(e.target.value) })}
                 />
               </div>
 
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm text-blue-900">
-                  Subtotal estimado: {formatMoney((conceptoForm.cantidad || 0) * (conceptoForm.precioUnit || 0))}
-                </p>
-              </div>
+              {conceptoForm.cantidad && conceptoForm.precioUnit && (
+                <div className="bg-gray-50 p-3 rounded">
+                  <p className="text-sm text-gray-600">Subtotal</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    ${(Number(conceptoForm.cantidad) * Number(conceptoForm.precioUnit)).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div className="flex gap-2 mt-6">
-              <button onClick={closeConceptoModal} className="btn-secondary flex-1">
+            <div className="flex gap-3 justify-end mt-6">
+              <button
+                onClick={() => {
+                  setShowConceptoModal(false)
+                  setEditingConcepto(null)
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
                 Cancelar
               </button>
-              <button onClick={saveConcepto} className="btn-primary flex-1">
-                {editingConcepto ? 'Actualizar' : 'Agregar'}
+              <button
+                onClick={guardarConcepto}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Guardar
               </button>
             </div>
           </div>

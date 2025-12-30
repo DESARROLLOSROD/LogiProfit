@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional } from 'class-validator';
+import { IsNumber, IsOptional, IsArray, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CompararFletesDto {
@@ -6,6 +6,17 @@ export class CompararFletesDto {
   @IsNumber()
   @IsOptional()
   configuracionMapeoId?: number;
+}
+
+export class SincronizarDiferenciasDto {
+  @ApiProperty({ description: 'Array de folios a sincronizar' })
+  @IsArray()
+  @IsString({ each: true })
+  folios: string[];
+
+  @ApiProperty({ description: 'ID de configuración de mapeo' })
+  @IsNumber()
+  configuracionMapeoId: number;
 }
 
 export interface DiferenciaFlete {

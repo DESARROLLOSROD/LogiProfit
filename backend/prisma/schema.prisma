@@ -129,54 +129,13 @@ model Cotizacion {
   pesoCarga        Decimal?         @db.Decimal(10, 2) // toneladas
   dimensiones      String?          // "L x A x H"
 
-  // Kilometraje
-  kmCargado        Decimal          @default(0) @db.Decimal(10, 2)
-  kmVacio          Decimal          @default(0) @db.Decimal(10, 2)
-  kmTotal          Decimal          @default(0) @db.Decimal(10, 2)
+  // Kilometraje estimado
+  kmEstimado       Decimal          @default(0) @db.Decimal(10, 2)
 
+  // Precio cotizado al cliente (único monto que ve el cliente)
   precioCotizado   Decimal          @db.Decimal(12, 2)
 
-  // Costos operativos directos
-  dieselEstimado   Decimal          @default(0) @db.Decimal(12, 2)
-  casetasEstimado  Decimal          @default(0) @db.Decimal(12, 2)
-  viaticosEstimado Decimal          @default(0) @db.Decimal(12, 2)
-  salarioEstimado  Decimal          @default(0) @db.Decimal(12, 2)
-  permisoEstimado  Decimal          @default(0) @db.Decimal(12, 2)
-
-  // Costos porcentuales
-  porcentajeMantenimiento Decimal   @default(25) @db.Decimal(5, 2)
-  montoMantenimiento      Decimal   @default(0) @db.Decimal(12, 2)
-  porcentajeIndirectos    Decimal   @default(20) @db.Decimal(5, 2)
-  montoIndirectos         Decimal   @default(0) @db.Decimal(12, 2)
-
-  // Carro piloto
-  requiereCarroPiloto     Boolean   @default(false)
-  diasCarroPiloto         Int?
-  costoBaseCarroPiloto    Decimal?  @db.Decimal(12, 2)
-  gasolinaCarroPiloto     Decimal?  @db.Decimal(12, 2)
-  casetasCarroPiloto      Decimal?  @db.Decimal(12, 2)
-  alimentacionCarroPiloto Decimal?  @db.Decimal(12, 2)
-  imprevistosCarroPiloto  Decimal?  @db.Decimal(12, 2)
-  totalCarroPiloto        Decimal   @default(0) @db.Decimal(12, 2)
-
-  // Viáticos detallados
-  comidasCantidad         Int?
-  comidasPrecioUnitario   Decimal?  @db.Decimal(10, 2)
-  federalCantidad         Int?
-  federalPrecioUnitario   Decimal?  @db.Decimal(10, 2)
-  telefonoCantidad        Int?
-  telefonoPrecioUnitario  Decimal?  @db.Decimal(10, 2)
-  imprevistosViaticos     Decimal?  @db.Decimal(12, 2)
-
-  // Casetas detalladas
-  casetasCargado          Decimal?  @db.Decimal(12, 2)
-  casetasVacio            Decimal?  @db.Decimal(12, 2)
-
-  // Totales y márgenes
-  costoTotal           Decimal      @default(0) @db.Decimal(12, 2)
-  utilidadEsperada     Decimal      @default(0) @db.Decimal(12, 2)
-  margenEsperado       Decimal      @default(0) @db.Decimal(5, 2) // Porcentaje
-
+  // Estado y datos administrativos
   estado           EstadoCotizacion @default(BORRADOR)
   notas            String?
   validoHasta      DateTime?

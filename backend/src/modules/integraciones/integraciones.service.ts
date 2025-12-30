@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateConfiguracionMapeoDto } from './dto/create-configuracion-mapeo.dto';
 import { UpdateConfiguracionMapeoDto } from './dto/update-configuracion-mapeo.dto';
 import { ExportarFletesDto } from './dto/exportar-fletes.dto';
-import { ComparacionResult, DiferenciaFlete } from './dto/comparar-fletes.dto';
+import { ComparacionResult, DiferenciaFlete, SincronizarDiferenciasDto } from './dto/comparar-fletes.dto';
 import { TipoArchivo, TipoOperacion } from '@prisma/client';
 import { ExcelParser } from './parsers/excel.parser';
 import { CsvParser } from './parsers/csv.parser';
@@ -14,6 +14,7 @@ import { XmlExporter } from './exporters/xml.exporter';
 import { MapperService } from './mappers/mapper.service';
 import { ValidadorService, ValidationError } from './mappers/validador.service';
 import { FletesService } from '../fletes/fletes.service';
+import * as XLSX from 'xlsx';
 
 export interface ResultadoImportacion {
   logId: number;
@@ -534,5 +535,182 @@ export class IntegracionesService {
     }
 
     return diferencias;
+  }
+
+  // ==================== SINCRONIZACIÓN DE DIFERENCIAS ====================
+
+  async sincronizarDiferencias(
+    file: Express.Multer.File,
+    dto: SincronizarDiferenciasDto,
+    empresaId: number,
+    usuarioId: number,
+  ): Promise<{ actualizados: number; errores: string[] }> {
+    // Obtener configuración
+    const config = await this.findOneConfiguracion(dto.configuracionMapeoId, empresaId);
+
+    // Parsear archivo
+    const parser = this.getParser(config.tipoArchivo);
+    const { rows } = await this.parseFile(parser, file.buffer);
+
+    // Mapear folios del archivo
+    const foliosArchivo = new Map<string, any>();
+    for (const row of rows) {
+      const dtoMapeado = await this.mapperService.mapToFlete(row, config, empresaId);
+      if (dtoMapeado.folio && dto.folios.includes(dtoMapeado.folio)) {
+        foliosArchivo.set(dtoMapeado.folio, dtoMapeado);
+      }
+    }
+
+    let actualizados = 0;
+    const errores: string[] = [];
+
+    // Actualizar solo los folios seleccionados
+    for (const folio of dto.folios) {
+      const datosArchivo = foliosArchivo.get(folio);
+
+      if (!datosArchivo) {
+        errores.push(`Folio ${folio} no encontrado en archivo`);
+        continue;
+      }
+
+      try {
+        // Buscar flete en LogiProfit
+        const fleteExistente = await this.prisma.flete.findFirst({
+          where: { empresaId, folio },
+        });
+
+        if (!fleteExistente) {
+          errores.push(`Folio ${folio} no existe en LogiProfit`);
+          continue;
+        }
+
+        // Actualizar con datos del archivo
+        await this.prisma.flete.update({
+          where: { id: fleteExistente.id },
+          data: {
+            origen: datosArchivo.origen || fleteExistente.origen,
+            destino: datosArchivo.destino || fleteExistente.destino,
+            precioCliente: datosArchivo.precioCliente || fleteExistente.precioCliente,
+            kmReales: datosArchivo.kmReales || fleteExistente.kmReales,
+            fechaInicio: datosArchivo.fechaInicio || fleteExistente.fechaInicio,
+            fechaFin: datosArchivo.fechaFin || fleteExistente.fechaFin,
+            notas: datosArchivo.notas || fleteExistente.notas,
+            clienteId: datosArchivo.clienteId || fleteExistente.clienteId,
+          },
+        });
+
+        actualizados++;
+      } catch (error) {
+        errores.push(`Error al actualizar ${folio}: ${error.message}`);
+      }
+    }
+
+    // Registrar log
+    await this.prisma.importacionLog.create({
+      data: {
+        empresaId,
+        usuarioId,
+        configuracionMapeoId: dto.configuracionMapeoId,
+        nombreArchivo: file.originalname,
+        tipoOperacion: TipoOperacion.IMPORTACION,
+        formato: config.tipoArchivo,
+        totalRegistros: dto.folios.length,
+        registrosExitosos: 0,
+        registrosActualizados: actualizados,
+        registrosErrores: errores.length,
+        detallesErrores: errores.length > 0 ? errores.map(e => ({ error: e })) as any : undefined,
+      },
+    });
+
+    return { actualizados, errores };
+  }
+
+  // ==================== EXPORTAR COMPARACIÓN A EXCEL ====================
+
+  async exportarComparacion(comparacion: ComparacionResult): Promise<Buffer> {
+    const workbook = XLSX.utils.book_new();
+
+    // Hoja 1: Resumen
+    const resumenData = [
+      ['RESUMEN DE COMPARACIÓN'],
+      [],
+      ['Total Folios en Archivo', comparacion.totalFletesArchivo],
+      ['Total Folios en LogiProfit', comparacion.totalFletesLogiProfit],
+      ['Folios Coincidentes', comparacion.fletesCoincidentes],
+      ['Folios con Diferencias', comparacion.fletesConDiferencias],
+      ['Folios Solo en Archivo', comparacion.fletesSoloEnArchivo.length],
+      ['Folios Solo en LogiProfit', comparacion.fletesSoloEnLogiProfit.length],
+    ];
+    const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+    XLSX.utils.book_append_sheet(workbook, wsResumen, 'Resumen');
+
+    // Hoja 2: Diferencias Detectadas
+    if (comparacion.diferencias.length > 0) {
+      const diferenciasData: any[][] = [
+        ['Folio', 'Campo', 'Valor Aspel/Microsip', 'Valor LogiProfit', 'Gastos Totales', 'Cantidad Gastos'],
+      ];
+
+      for (const diff of comparacion.diferencias) {
+        const gastos = comparacion.gastosPorFolio[diff.folio];
+        diferenciasData.push([
+          diff.folio,
+          diff.campo,
+          diff.valorArchivo,
+          diff.valorLogiProfit,
+          gastos ? gastos.totalGastos : 0,
+          gastos ? gastos.cantidadGastos : 0,
+        ]);
+      }
+
+      const wsDiferencias = XLSX.utils.aoa_to_sheet(diferenciasData);
+      XLSX.utils.book_append_sheet(workbook, wsDiferencias, 'Diferencias');
+    }
+
+    // Hoja 3: Folios Solo en Archivo
+    if (comparacion.fletesSoloEnArchivo.length > 0) {
+      const soloArchivoData: any[][] = [['Folio']];
+      for (const folio of comparacion.fletesSoloEnArchivo) {
+        soloArchivoData.push([folio]);
+      }
+      const wsSoloArchivo = XLSX.utils.aoa_to_sheet(soloArchivoData);
+      XLSX.utils.book_append_sheet(workbook, wsSoloArchivo, 'Solo en Archivo');
+    }
+
+    // Hoja 4: Folios Solo en LogiProfit
+    if (comparacion.fletesSoloEnLogiProfit.length > 0) {
+      const soloLogiProfitData: any[][] = [['Folio']];
+      for (const folio of comparacion.fletesSoloEnLogiProfit) {
+        soloLogiProfitData.push([folio]);
+      }
+      const wsSoloLogiProfit = XLSX.utils.aoa_to_sheet(soloLogiProfitData);
+      XLSX.utils.book_append_sheet(workbook, wsSoloLogiProfit, 'Solo en LogiProfit');
+    }
+
+    // Hoja 5: Detalle de Gastos por Folio
+    const gastosData: any[][] = [
+      ['Folio', 'Total Gastos', 'Cantidad Gastos', 'Tipo Gasto', 'Monto', 'Descripción'],
+    ];
+
+    for (const [folio, gastosInfo] of Object.entries(comparacion.gastosPorFolio)) {
+      if (gastosInfo.gastos.length > 0) {
+        for (let i = 0; i < gastosInfo.gastos.length; i++) {
+          const gasto = gastosInfo.gastos[i];
+          gastosData.push([
+            i === 0 ? folio : '', // Solo mostrar folio en primera fila
+            i === 0 ? gastosInfo.totalGastos : '',
+            i === 0 ? gastosInfo.cantidadGastos : '',
+            gasto.tipo,
+            gasto.monto,
+            gasto.descripcion || '',
+          ]);
+        }
+      }
+    }
+
+    const wsGastos = XLSX.utils.aoa_to_sheet(gastosData);
+    XLSX.utils.book_append_sheet(workbook, wsGastos, 'Gastos Detallados');
+
+    // Generar buffer
+    return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   }
 }

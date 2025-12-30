@@ -237,6 +237,67 @@ export class IntegracionesController {
     );
   }
 
+  @Post('sincronizar')
+  @ApiOperation({ summary: 'Sincronizar diferencias seleccionadas con LogiProfit' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        configuracionMapeoId: { type: 'number' },
+        folios: { type: 'array', items: { type: 'string' } },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
+  async sincronizar(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('configuracionMapeoId', ParseIntPipe) configuracionMapeoId: number,
+    @Body('folios') folios: string | string[],
+    @Request() req: any,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No se recibió ningún archivo');
+    }
+
+    const empresaId = req.user.empresa.id;
+    const usuarioId = req.user.id;
+
+    // Convertir folios a array si viene como string
+    const foliosArray = typeof folios === 'string' ? JSON.parse(folios) : folios;
+
+    return this.integracionesService.sincronizarDiferencias(
+      file,
+      { configuracionMapeoId, folios: foliosArray },
+      empresaId,
+      usuarioId,
+    );
+  }
+
+  @Post('exportar-comparacion')
+  @ApiOperation({ summary: 'Exportar resultado de comparación a Excel' })
+  async exportarComparacion(
+    @Body() comparacion: any,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.integracionesService.exportarComparacion(comparacion);
+
+    const timestamp = new Date().getTime();
+    const filename = `comparacion_${timestamp}.xlsx`;
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
+  }
+
   // ==================== EXPORTACIÓN ====================
 
   @Post('exportar')
