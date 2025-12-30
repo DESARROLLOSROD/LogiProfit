@@ -286,6 +286,24 @@ export default function FleteDetalle() {
     }
   }
 
+  const eliminarFlete = async () => {
+    if (!confirm(`¿Estás seguro de eliminar el flete ${flete?.folio}?`)) {
+      return
+    }
+
+    try {
+      await api.delete(`/fletes/${id}`)
+      toast.success('Flete eliminado correctamente')
+      navigate('/fletes')
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al eliminar el flete')
+    }
+  }
+
+  const puedeEliminar = () => {
+    return flete?.estado === 'PLANEADO' || flete?.estado === 'CANCELADO'
+  }
+
   const formatMoney = (amount: number) =>
     new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount)
 
@@ -356,18 +374,34 @@ export default function FleteDetalle() {
             Duplicar
           </button>
           {flete.estado === 'PLANEADO' && (
-            <button onClick={() => cambiarEstado('EN_CURSO')} className="btn-primary">
-              Iniciar Viaje
-            </button>
+            <>
+              <button onClick={() => cambiarEstado('EN_CURSO')} className="btn-primary">
+                Iniciar Viaje
+              </button>
+              <button onClick={() => cambiarEstado('CANCELADO')} className="btn-secondary">
+                Cancelar
+              </button>
+            </>
           )}
           {flete.estado === 'EN_CURSO' && (
-            <button onClick={() => cambiarEstado('COMPLETADO')} className="btn-primary">
-              Completar Viaje
-            </button>
+            <>
+              <button onClick={() => cambiarEstado('COMPLETADO')} className="btn-primary">
+                Completar Viaje
+              </button>
+              <button onClick={() => cambiarEstado('CANCELADO')} className="btn-secondary">
+                Cancelar
+              </button>
+            </>
           )}
           {flete.estado === 'COMPLETADO' && (
             <button onClick={() => cambiarEstado('CERRADO')} className="btn-secondary">
               Cerrar Flete
+            </button>
+          )}
+          {puedeEliminar() && (
+            <button onClick={eliminarFlete} className="btn-danger flex items-center gap-2">
+              <XMarkIcon className="w-5 h-5" />
+              Eliminar
             </button>
           )}
         </div>

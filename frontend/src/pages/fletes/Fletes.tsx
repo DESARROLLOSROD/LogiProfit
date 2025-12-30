@@ -5,7 +5,9 @@ import {
   FunnelIcon,
   ChevronUpIcon,
   ChevronDownIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline'
+import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import Pagination from '../../components/Pagination'
 import { exportarFletesAExcel } from '../../lib/excelExport'
@@ -156,6 +158,31 @@ export default function Fletes() {
     return badges[estado] || 'badge-gray'
   }
 
+  const puedeEliminar = (estado: string) => {
+    return estado === 'PLANEADO' || estado === 'CANCELADO'
+  }
+
+  const eliminarFlete = async (flete: Flete) => {
+    if (!puedeEliminar(flete.estado)) {
+      toast.error(
+        `No se puede eliminar un flete en estado ${flete.estado}. Solo se pueden eliminar fletes en PLANEADO o CANCELADO.`
+      )
+      return
+    }
+
+    if (!confirm(`¿Estás seguro de eliminar el flete ${flete.folio}?`)) {
+      return
+    }
+
+    try {
+      await api.delete(`/fletes/${flete.id}`)
+      toast.success('Flete eliminado correctamente')
+      fetchFletes()
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al eliminar')
+    }
+  }
+
   // Paginación
   const totalPaginas = Math.ceil(filteredFletes.length / itemsPorPagina)
   const indexInicio = (paginaActual - 1) * itemsPorPagina
@@ -294,12 +321,23 @@ export default function Fletes() {
                     </span>
                   </td>
                   <td>
-                    <Link
-                      to={`/fletes/${flete.id}`}
-                      className="text-primary-600 hover:underline text-sm"
-                    >
-                      Ver detalle
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        to={`/fletes/${flete.id}`}
+                        className="text-primary-600 hover:underline text-sm"
+                      >
+                        Ver detalle
+                      </Link>
+                      {puedeEliminar(flete.estado) && (
+                        <button
+                          onClick={() => eliminarFlete(flete)}
+                          className="text-red-600 hover:text-red-800"
+                          title="Eliminar flete"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
                 )
