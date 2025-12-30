@@ -371,6 +371,16 @@ export default function CotizacionDetalle() {
 
       {/* Acciones */}
       <div className="flex gap-3">
+        {cotizacion.estado !== 'CONVERTIDA' && (
+          <button
+            onClick={() => navigate(`/cotizaciones/editar/${id}`)}
+            className="px-4 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium flex items-center gap-2"
+          >
+            <PencilIcon className="h-5 w-5" />
+            Editar Cotización
+          </button>
+        )}
+
         <button
           onClick={() => setShowEstadoModal(true)}
           className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"

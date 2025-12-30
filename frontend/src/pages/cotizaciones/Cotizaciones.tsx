@@ -1,12 +1,14 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   PlusIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
   ChevronUpIcon,
   ChevronDownIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline'
+import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import Pagination from '../../components/Pagination'
 import { exportarCotizacionesAExcel } from '../../lib/excelExport'
@@ -188,6 +190,18 @@ export default function Cotizaciones() {
     setPaginaActual(1)
   }, [debouncedBusqueda, filtroEstado, advancedFilters])
 
+  const deleteCotizacion = async (id: number) => {
+    if (!confirm('¿Estás seguro de eliminar esta cotización?')) return
+    try {
+      await api.delete(`/cotizaciones/${id}`)
+      toast.success('Cotización eliminada')
+      setCotizaciones(prev => prev.filter(c => c.id !== id))
+    } catch (error) {
+      console.error('Error al eliminar:', error)
+      toast.error('Error al eliminar la cotización')
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -343,6 +357,7 @@ export default function Cotizaciones() {
                   cotizacion={cotizacion}
                   formatMoney={formatMoney}
                   getEstadoBadge={getEstadoBadge}
+                  onDelete={deleteCotizacion}
                 />
               ))
             )}

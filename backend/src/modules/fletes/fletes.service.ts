@@ -108,6 +108,7 @@ export class FletesService {
         totalGastos,
         utilidad,
         margen: Math.round(margen * 100) / 100,
+        cotizacionFolio: flete.cotizacion?.folio,
       },
     };
   }

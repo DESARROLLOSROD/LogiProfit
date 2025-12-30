@@ -30,6 +30,7 @@ import Integraciones from './pages/integraciones/Integraciones'
 import NuevaConfiguracion from './pages/integraciones/NuevaConfiguracion'
 import ImportarArchivo from './pages/integraciones/ImportarArchivo'
 import CompararArchivo from './pages/integraciones/CompararArchivo'
+import EditarCotizacion from './pages/cotizaciones/EditarCotizacion'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
@@ -98,6 +99,7 @@ export default function App() {
         {/* Cotizaciones */}
         <Route path="/cotizaciones" element={<Cotizaciones />} />
         <Route path="/cotizaciones/nueva" element={<NuevaCotizacionMejorada />} />
+        <Route path="/cotizaciones/editar/:id" element={<EditarCotizacion />} />
         <Route path="/cotizaciones/:id" element={<CotizacionDetalle />} />
 
         {/* Fletes */}
