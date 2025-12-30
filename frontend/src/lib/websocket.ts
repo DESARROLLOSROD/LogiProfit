@@ -15,7 +15,7 @@ export function connectWebSocket(empresaId: number): Socket {
   }
 
   // URL del servidor WebSocket
-  const wsUrl = 'http://localhost:3000'
+  const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3000'
 
   socket = io(wsUrl, {
     transports: ['websocket', 'polling'],

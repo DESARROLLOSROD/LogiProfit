@@ -4,109 +4,134 @@
 
 LogiProfit permite a las empresas de transporte conocer la rentabilidad real de cada viaje, tratando cada flete como un mini estado de resultados (P&L).
 
+---
+
+## ✅ Estado Actual del Sistema
+**Sistema 100% Funcional y Listo para Producción**
+- **Backend**: NestJS + Prisma (PostgreSQL)
+- **Frontend**: React 18 + TypeScript + Tailwind CSS
+- **Despliegue**: Preparado para Railway + Supabase
+
+---
+
 ## 🎯 Características Principales
+- **Cotizaciones Inteligentes**: Simula costos antes de aceptar un flete.
+- **Gestión de Fletes**: Control completo del ciclo de vida (Planeado → En Curso → Cerrado).
+- **Módulo de Mantenimiento**: Alertas preventivas y control de reparaciones por camión.
+- **Categorías y Presupuestos**: 14 categorías de gastos con control presupuestal.
+- **Notificaciones Real-Time**: WebSocket para alertas urgentes y márgenes bajos.
+- **Exportación**: Generación de reportes profesionales en PDF y Excel (multi-sheet).
+- **Sistema RBAC**: Control de acceso basado en 25 permisos granulares.
 
-- **Cotizaciones Inteligentes**: Simula costos antes de aceptar un flete
-- **Gestión de Fletes**: Control completo del ciclo de vida del viaje
-- **Cálculo Automático de Salarios**: Según días, km o viaje
-- **Control de Gastos**: Diesel, casetas, viáticos, mantenimiento
-- **Utilidad en Tiempo Real**: Recálculo automático con cada gasto
-- **Multi-tenant**: Soporte para múltiples empresas
+---
 
-## 🏗️ Arquitectura
+## ⚙️ Flujos Técnicos
 
+### 1. Ciclo de Vida de Cotización a Flete
+```mermaid
+graph TD
+    A[Nueva Cotización] --> B{Validación de Costos}
+    B -->|Borrador| C[Cálculo de Utilidad Estimada]
+    C --> D[Envío a Cliente]
+    D --> E{Respuesta}
+    E -->|Aprobada| F[Conversión a Flete]
+    E -->|Rechazada| G[Archivo]
+    F --> H[Asignación de Camión y Chofer]
 ```
-logiprofit/
-├── backend/          # API REST con NestJS
-├── frontend/         # SPA con React + Tailwind
-├── database/         # Scripts SQL y migraciones
-└── docs/             # Documentación adicional
+
+### 2. Flujo de Control de Gastos y Rentabilidad
+```mermaid
+graph LR
+    A[Flete en Curso] --> B[Registro de Gasto]
+    B --> C[Subir Comprobante]
+    C --> D{Validación Contable}
+    D -->|Validado| E[Actualización de P&L Real]
+    E --> F[Dashboard de Rentabilidad]
 ```
 
-## 🛠️ Stack Tecnológico
+### 3. Sistema de Alertas (WebSockets)
+```mermaid
+sequenceDiagram
+    participant B as Backend
+    participant W as WebSocket Gateway
+    participant F as Frontend
+    B->>B: Detectar Gasto Alto / Margen Bajo
+    B->>W: Emitir Evento 'margen-bajo'
+    W->>F: Notificación en Tiempo Real
+    F->>F: Actualizar Badge de Pendientes
+```
 
-| Componente | Tecnología |
-|------------|------------|
-| Frontend   | React 18 + TypeScript + Tailwind CSS |
-| Backend    | NestJS + TypeScript |
-| Base de Datos | PostgreSQL |
-| ORM        | Prisma |
-| Autenticación | JWT |
-| Hosting    | Railway / Render |
+### 4. Mantenimiento Preventivo
+```mermaid
+graph TD
+    A[Kilometraje de Camión] --> B{¿Requiere Mant.?}
+    B -->|Sí/Próximo| C[Alerta en Dashboard]
+    C --> D[Programar Mantenimiento]
+    D --> E[Ejecutar y Registrar Costo]
+    E --> F[Actualizar Odómetro y Fecha]
+```
 
-## 🚀 Inicio Rápido
+---
+
+## 🚀 Inicio Rápido (Desarrollo)
 
 ### Prerrequisitos
-
-- Node.js 18+
-- PostgreSQL 14+
-- npm o yarn
+- Node.js 18+, PostgreSQL 14+, npm
 
 ### Instalación
-
 ```bash
-# Clonar repositorio
-git clone https://github.com/tu-usuario/logiprofit.git
-cd logiprofit
-
-# Instalar dependencias del backend
-cd backend
-npm install
-
-# Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus credenciales
-
-# Ejecutar migraciones
+# 1. Clonar e instalar backend
+cd backend && npm install
+cp .env.example .env # Configura DATABASE_URL, JWT_SECRET, FRONTEND_URL
+npx prisma generate
 npx prisma migrate dev
-
-# Iniciar backend
 npm run start:dev
 
-# En otra terminal, instalar frontend
-cd ../frontend
-npm install
+# 2. Instalar frontend (en otra terminal)
+cd frontend && npm install
 npm run dev
 ```
 
-## 📊 Módulos
+---
 
-### 1. Cotizaciones
-Crea cotizaciones con cálculo automático de costos estimados y utilidad esperada.
+## ☁️ Despliegue en Railway
 
-### 2. Fletes
-Gestiona el ciclo completo: Planeado → En Curso → Cerrado
+### 1. Backend (NestJS)
+- **Root Directory**: `backend`
+- **Build Command**: `npx prisma generate && npm run build`
+- **Start Command**: `npm run start:prod`
+- **Variables**: `DATABASE_URL` (Supabase), `JWT_SECRET`, `FRONTEND_URL`.
 
-### 3. Camiones
-Centro de costos con rendimiento histórico y costo por km.
+### 2. Frontend (Vite)
+- **Root Directory**: `frontend`
+- **Variables**: 
+  - `VITE_API_URL`: URL del backend + `/api/v1`
+  - `VITE_WS_URL`: URL del backend
 
-### 4. Choferes
-Configuración flexible de pagos: por día, viaje o kilómetro.
+---
 
-### 5. Gastos
-Registro con evidencia y validación contable.
+## 📋 Guía del Dashboard de Pendientes
+Accede desde el menú lateral (ícono ⏰) para gestionar:
+1.  🟡 **Fletes sin Gastos**: Viajes activos sin registros financieros.
+2.  🟠 **Cotizaciones por Vencer**: Seguimiento a propuestas próximas a expirar.
+3.  🔴 **Comprobantes Faltantes**: Gastos registrados sin factura (XML/PDF).
+4.  🟣 **Pagos Vencidos**: Control de cobranza.
 
-### 6. Reportes
-Dashboard de rentabilidad y exportación a PDF.
+---
 
-## 🔐 Roles de Usuario
+## 🔐 Roles y Permisos
+- **Admin**: Control total.
+- **Operador**: Cotizaciones y fletes.
+- **Chofer**: Registro de gastos.
+- **Contabilidad**: Validación de facturas y presupuestos.
 
-| Rol | Permisos |
-|-----|----------|
-| Administrador | Configuración completa del sistema |
-| Operador Logístico | Cotizaciones, fletes, asignaciones |
-| Chofer | Captura de gastos |
-| Contabilidad | Validación de gastos |
-| Dirección | Dashboards y reportes |
+---
 
-## 📝 Licencia
+## 📝 Notas de Desarrollo
+- **Prisma Decimals**: Siempre convertir a número en el frontend: `Number(valor) || 0`.
+- **Caché**: Si hay cambios visuales no reflejados, usa `Ctrl + Shift + R`.
+- **RBAC**: Usa el hook `usePermissions()` para proteger componentes en el frontend.
 
-MIT License - ver [LICENSE](LICENSE)
-
-## 🤝 Contribuir
-
-1. Fork el proyecto
-2. Crea tu rama (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit tus cambios (`git commit -m 'Agrega nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Abre un Pull Request
+---
+**Generado:** Diciembre 2024
+**Licencia:** MIT
