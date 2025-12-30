@@ -30,6 +30,7 @@ model Empresa {
   fletes               Flete[]
   configuracionesMapeo ConfiguracionMapeo[]
   importacionesLog     ImportacionLog[]
+  plantillasGasto      PlantillaGasto[]
 
   @@map("empresas")
 }
@@ -364,6 +365,23 @@ model CategoriaGasto {
   presupuestos  PresupuestoCategoria[]
 
   @@map("categorias_gasto")
+}
+
+model PlantillaGasto {
+  id             Int       @id @default(autoincrement())
+  empresaId      Int
+  nombre         String
+  tipo           TipoGasto
+  concepto       String?
+  montoEstimado  Decimal   @db.Decimal(12, 2)
+  activa         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  @@index([empresaId])
+  @@map("plantillas_gasto")
 }
 
 model Gasto {

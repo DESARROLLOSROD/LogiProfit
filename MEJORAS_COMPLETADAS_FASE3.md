@@ -4,7 +4,7 @@
 
 ---
 
-## ✅ COMPLETADAS (3 de 9)
+## ✅ COMPLETADAS (4 de 9)
 
 ### 1. ✅ Búsqueda Universal
 
@@ -128,21 +128,53 @@ Ninguna en progreso actualmente.
 
 ---
 
-## ⏳ PENDIENTES (6 de 9)
+### 2. ✅ Plantillas de Gastos
 
-### 2. ⏳ Plantillas de Gastos
+**Estado:** COMPLETADO
 
-**Objetivo:** Pre-configurar gastos comunes (diesel, casetas, etc.) para agregar rápidamente.
+#### Backend - Modelo
+- ✅ Modelo `PlantillaGasto` en Prisma schema
+- ✅ Migración de BD aplicada con `db push`
+- ✅ Campos: nombre, tipo, concepto, montoEstimado, activa
 
-**Tareas pendientes:**
-- [ ] Crear modelo `PlantillaGasto` en Prisma schema
-- [ ] Crear migración de base de datos
-- [ ] Implementar CRUD endpoints para plantillas
-- [ ] UI para crear/editar plantillas
-- [ ] Botón "Usar Plantilla" al agregar gasto a flete
-- [ ] Plantillas predeterminadas al crear empresa
+#### Backend - API
+- ✅ Módulo `PlantillasGastoModule`
+- ✅ Controlador con CRUD completo
+- ✅ Servicio con métodos:
+  - `create()` - Crear plantilla
+  - `findAll()` - Listar (con opción de incluir inactivas)
+  - `findOne()` - Obtener detalle
+  - `update()` - Actualizar
+  - `remove()` - Soft delete (marca como inactiva)
+  - `crearPlantillasPredeterminadas()` - 4 plantillas base
 
-**Estimado:** 2-3 horas
+#### Plantillas Predeterminadas
+- ✅ Diesel - Carga Completa ($5,000)
+- ✅ Casetas - Ruta Nacional ($1,500)
+- ✅ Mantenimiento Preventivo ($2,000)
+- ✅ Comida Chofer ($500)
+
+#### Endpoints
+- `POST /plantillas-gasto` - Crear plantilla
+- `POST /plantillas-gasto/predeterminadas` - Crear plantillas base
+- `GET /plantillas-gasto` - Listar todas
+- `GET /plantillas-gasto/:id` - Obtener una
+- `PATCH /plantillas-gasto/:id` - Actualizar
+- `DELETE /plantillas-gasto/:id` - Eliminar (soft)
+
+**Archivos Creados:**
+1. `backend/src/modules/plantillas-gasto/plantillas-gasto.module.ts`
+2. `backend/src/modules/plantillas-gasto/plantillas-gasto.service.ts`
+3. `backend/src/modules/plantillas-gasto/plantillas-gasto.controller.ts`
+4. `backend/src/modules/gastos/dto/plantilla-gasto.dto.ts` (ya existía)
+
+**Archivos Modificados:**
+1. `backend/prisma/schema.prisma` - Modelo PlantillaGasto
+2. `backend/src/app.module.ts` - Import PlantillasGastoModule
+
+---
+
+## ⏳ PENDIENTES (5 de 9)
 
 ---
 
@@ -232,7 +264,7 @@ Ninguna en progreso actualmente.
 | Mejora | Estado | Estimado | Prioridad |
 |--------|--------|----------|-----------|
 | 1. Búsqueda Universal | ✅ COMPLETADO | - | Alta |
-| 2. Plantillas de Gastos | ⏳ Pendiente | 2-3h | Media |
+| 2. Plantillas de Gastos | ✅ COMPLETADO | - | Media |
 | 3. Resumen Mensual | ⏳ Pendiente | 3-4h | Media |
 | 4. Copiar Flete | ✅ COMPLETADO | - | Alta |
 | 5. Checklist por Flete | ⏳ Pendiente | 2-3h | Media |
@@ -241,8 +273,8 @@ Ninguna en progreso actualmente.
 | 8. Notificaciones | ⏳ Pendiente | 4-5h | Baja |
 | 9. Modo PWA | ⏳ Pendiente | 3-4h | Baja |
 
-**Total completado:** 3/9 (33%)
-**Tiempo estimado restante:** 14-20 horas
+**Total completado:** 4/9 (44%)
+**Tiempo estimado restante:** 11-17 horas
 
 ---
 

@@ -18,6 +18,7 @@ import { MantenimientoModule } from './modules/mantenimiento/mantenimiento.modul
 import { IntegracionesModule } from './modules/integraciones/integraciones.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { SearchModule } from './modules/search/search.module';
+import { PlantillasGastoModule } from './modules/plantillas-gasto/plantillas-gasto.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { SearchModule } from './modules/search/search.module';
     CotizacionesModule,
     FletesModule,
     GastosModule,
+    PlantillasGastoModule,
     ReportesModule,
     NotificationsModule,
     MantenimientoModule,
