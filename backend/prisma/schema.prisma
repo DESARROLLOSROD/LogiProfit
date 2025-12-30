@@ -219,6 +219,7 @@ model Flete {
   choferes     FleteChofer[]
   gastos       Gasto[]
   checklist    FleteChecklist[]
+  factura      Factura?
 
   @@index([empresaId, estado])
   @@index([empresaId, estadoPago])
@@ -558,6 +559,69 @@ enum EstadoDocumento {
   VIGENTE
   POR_VENCER    // Menos de 30 días para vencimiento
   VENCIDO
+}
+
+// ==================== FACTURACIÓN ====================
+
+model Factura {
+  id               Int               @id @default(autoincrement())
+  fleteId          Int               @unique
+  numero           String            // Número de factura
+  serie            String?
+  uuid             String            @unique // UUID fiscal (Timbre)
+  fechaEmision     DateTime
+  fechaVencimiento DateTime?
+
+  // Montos
+  subtotal         Decimal           @db.Decimal(12, 2)
+  iva              Decimal           @db.Decimal(12, 2)
+  total            Decimal           @db.Decimal(12, 2)
+
+  // Datos fiscales
+  metodoPago       MetodoPago?       @default(PUE)
+  formaPago        FormaPago?        @default(TRANSFERENCIA)
+  usoCFDI          String?           // G03, P01, etc.
+
+  // Archivos
+  xmlUrl           String?           // URL del archivo XML
+  pdfUrl           String?           // URL del archivo PDF
+
+  // Estado
+  estadoPago       EstadoPagoFactura @default(PENDIENTE)
+
+  // Notas y metadatos
+  notas            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  flete            Flete             @relation(fields: [fleteId], references: [id], onDelete: Restrict)
+
+  @@index([estadoPago])
+  @@index([fechaEmision])
+  @@index([fechaVencimiento])
+  @@map("facturas")
+}
+
+enum MetodoPago {
+  PUE  // Pago en una sola exhibición
+  PPD  // Pago en parcialidades o diferido
+}
+
+enum FormaPago {
+  EFECTIVO          // 01
+  CHEQUE            // 02
+  TRANSFERENCIA     // 03
+  TARJETA_CREDITO   // 04
+  TARJETA_DEBITO    // 28
+  POR_DEFINIR       // 99
+}
+
+enum EstadoPagoFactura {
+  PENDIENTE
+  PAGADA_PARCIAL
+  PAGADA
+  VENCIDA
+  CANCELADA
 }
 
 // ==================== INTEGRACIONES EXTERNAS ====================

@@ -20,6 +20,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { SearchModule } from './modules/search/search.module';
 import { PlantillasGastoModule } from './modules/plantillas-gasto/plantillas-gasto.module';
 import { DocumentosModule } from './modules/documentos/documentos.module';
+import { FacturasModule } from './modules/facturas/facturas.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { DocumentosModule } from './modules/documentos/documentos.module';
     DashboardModule,
     SearchModule,
     DocumentosModule,
+    FacturasModule,
   ],
   providers: [
     {
