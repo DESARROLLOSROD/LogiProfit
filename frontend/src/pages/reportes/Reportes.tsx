@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
+import { Calendar } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
 
 export default function Reportes() {
+  const navigate = useNavigate()
   const [fechaDesde, setFechaDesde] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
   const [fechaHasta, setFechaHasta] = useState(new Date().toISOString().split('T')[0])
   const [reporte, setReporte] = useState<any>(null)
@@ -23,7 +26,19 @@ export default function Reportes() {
 
   return (
     <div>
-      <div className="mb-6"><h1 className="text-2xl font-bold text-gray-900">Reportes</h1><p className="text-gray-500">Analiza la rentabilidad de tu operación</p></div>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Reportes</h1>
+          <p className="text-gray-500">Analiza la rentabilidad de tu operación</p>
+        </div>
+        <button
+          onClick={() => navigate('/reportes/resumen-mensual')}
+          className="btn-primary flex items-center gap-2"
+        >
+          <Calendar className="h-4 w-4" />
+          Resumen Mensual
+        </button>
+      </div>
 
       <div className="card mb-6">
         <div className="flex flex-wrap items-end gap-4">

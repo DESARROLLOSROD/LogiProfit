@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Patch,
+  Put,
   Param,
   Delete,
   Request,
@@ -170,5 +171,73 @@ export class FletesController {
       copyAsignaciones: copyAsignaciones === 'true',
     };
     return this.fletesService.duplicarFlete(id, req.user.empresaId, options);
+  }
+
+  // ==================== CHECKLIST ====================
+
+  @Get(':id/checklist')
+  @ApiOperation({ summary: 'Obtener checklist del flete' })
+  @ApiResponse({ status: 200, description: 'Checklist del flete' })
+  getChecklist(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.fletesService.getChecklist(id, req.user.empresaId);
+  }
+
+  @Post(':id/checklist/predeterminado')
+  @ApiOperation({ summary: 'Crear checklist predeterminado para el flete' })
+  @ApiResponse({ status: 201, description: 'Checklist predeterminado creado' })
+  crearChecklistPredeterminado(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.fletesService.crearChecklistPredeterminado(id, req.user.empresaId);
+  }
+
+  @Post(':id/checklist')
+  @ApiOperation({ summary: 'Agregar item al checklist' })
+  @ApiResponse({ status: 201, description: 'Item agregado al checklist' })
+  agregarItemChecklist(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() createDto: any,
+  ) {
+    return this.fletesService.agregarItemChecklist(id, req.user.empresaId, createDto);
+  }
+
+  @Patch(':id/checklist/:itemId')
+  @ApiOperation({ summary: 'Marcar/desmarcar item del checklist' })
+  @ApiResponse({ status: 200, description: 'Item actualizado' })
+  marcarChecklistItem(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('itemId', ParseIntPipe) itemId: number,
+    @Body() updateDto: any,
+  ) {
+    return this.fletesService.marcarChecklistItem(id, itemId, req.user.empresaId, updateDto);
+  }
+
+  @Put(':id/checklist/:itemId/descripcion')
+  @ApiOperation({ summary: 'Actualizar descripción del item' })
+  @ApiResponse({ status: 200, description: 'Descripción actualizada' })
+  actualizarDescripcionChecklistItem(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('itemId', ParseIntPipe) itemId: number,
+    @Body() updateDto: any,
+  ) {
+    return this.fletesService.actualizarDescripcionChecklistItem(id, itemId, req.user.empresaId, updateDto);
+  }
+
+  @Delete(':id/checklist/:itemId')
+  @ApiOperation({ summary: 'Eliminar item del checklist' })
+  @ApiResponse({ status: 200, description: 'Item eliminado' })
+  eliminarChecklistItem(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('itemId', ParseIntPipe) itemId: number,
+  ) {
+    return this.fletesService.eliminarChecklistItem(id, itemId, req.user.empresaId);
   }
 }

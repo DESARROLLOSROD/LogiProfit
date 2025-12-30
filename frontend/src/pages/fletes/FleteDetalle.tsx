@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
+import FleteChecklist from '../../components/FleteChecklist'
 
 interface Flete {
   id: number
@@ -503,6 +504,11 @@ export default function FleteDetalle() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Checklist */}
+      <div className="mb-6">
+        <FleteChecklist fleteId={flete.id} />
       </div>
 
       {/* Gastos */}

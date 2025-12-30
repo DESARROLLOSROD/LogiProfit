@@ -217,6 +217,7 @@ model Flete {
   camiones     FleteCamion[]
   choferes     FleteChofer[]
   gastos       Gasto[]
+  checklist    FleteChecklist[]
 
   @@index([empresaId, estado])
   @@index([empresaId, estadoPago])
@@ -225,6 +226,21 @@ model Flete {
   @@index([fechaVencimiento])
   @@index([createdAt])
   @@map("fletes")
+}
+
+model FleteChecklist {
+  id          Int      @id @default(autoincrement())
+  fleteId     Int
+  descripcion String
+  completado  Boolean  @default(false)
+  orden       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  flete Flete @relation(fields: [fleteId], references: [id], onDelete: Cascade)
+
+  @@index([fleteId])
+  @@map("flete_checklist")
 }
 
 enum EstadoFlete {

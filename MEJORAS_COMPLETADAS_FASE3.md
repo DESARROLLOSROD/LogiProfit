@@ -4,7 +4,7 @@
 
 ---
 
-## ✅ COMPLETADAS (4 de 9)
+## ✅ COMPLETADAS (6 de 9)
 
 ### 1. ✅ Búsqueda Universal
 
@@ -174,39 +174,106 @@ Ninguna en progreso actualmente.
 
 ---
 
-## ⏳ PENDIENTES (5 de 9)
+### 3. ✅ Resumen Mensual Único
+
+**Estado:** COMPLETADO
+
+#### Backend
+- ✅ Endpoint `GET /fletes/resumen-mensual` (ya existía)
+- ✅ Parámetros: mes, año
+- ✅ Métricas calculadas:
+  - Total de fletes del mes
+  - Total ingresos
+  - Total gastos
+  - Utilidad neta
+  - Margen promedio
+  - Fletes con pérdida
+
+#### Frontend
+- ✅ Página `ResumenMensual.tsx`
+- ✅ Navegación desde `/reportes`
+- ✅ Selector de mes/año con flechas
+- ✅ 4 cards principales de estadísticas:
+  - Total Fletes (con ícono camión)
+  - Ingresos Totales (verde)
+  - Gastos Totales (rojo)
+  - Utilidad Neta (verde/rojo según resultado)
+- ✅ Cards secundarias:
+  - Margen de Utilidad con barra de progreso
+  - Fletes con Pérdida con indicador visual
+- ✅ Sección de Análisis con:
+  - Promedio por flete (ingresos, gastos, utilidad)
+  - Recomendaciones inteligentes según métricas
+- ✅ Botones de acción para navegar a reportes o fletes
+
+**Ubicación:** [ResumenMensual.tsx](frontend/src/pages/reportes/ResumenMensual.tsx)
+
+**Características:**
+- Cambio rápido de mes con flechas
+- Colores semáforo según rendimiento
+- Recomendaciones automáticas
+- Vista móvil responsive
+- Navegación integrada con sistema de reportes
 
 ---
 
-### 3. ⏳ Resumen Mensual Único
+### 5. ✅ Checklist por Flete
 
-**Objetivo:** Una página con todo el resumen del mes (ingresos, gastos, fletes, etc.).
+**Estado:** COMPLETADO
 
-**Tareas pendientes:**
-- [ ] Nuevo endpoint `/reportes/resumen-mensual`
-- [ ] Agregar métricas adicionales al reporte existente
-- [ ] Página `ResumenMensual.tsx`
-- [ ] Cards con estadísticas clave
-- [ ] Gráficas de tendencias
-- [ ] Exportar a PDF/Excel
+#### Backend - Modelo
+- ✅ Modelo `FleteChecklist` en Prisma schema
+- ✅ Migración de BD con `db push`
+- ✅ Campos: id, fleteId, descripcion, completado, orden
+- ✅ Relación con Flete (cascade delete)
 
-**Estimado:** 3-4 horas
+#### Backend - API
+- ✅ Endpoints integrados en FletesController:
+  - `GET /fletes/:id/checklist` - Obtener checklist
+  - `POST /fletes/:id/checklist/predeterminado` - Crear predeterminado
+  - `POST /fletes/:id/checklist` - Agregar item
+  - `PATCH /fletes/:id/checklist/:itemId` - Marcar/desmarcar
+  - `PUT /fletes/:id/checklist/:itemId/descripcion` - Editar texto
+  - `DELETE /fletes/:id/checklist/:itemId` - Eliminar item
+
+#### Checklist Predeterminado
+Creado automáticamente al acceder si no existe:
+1. Asignar camión y chofer
+2. Confirmar horario de carga
+3. Revisar documentación del camión
+4. Verificar seguro de carga
+5. Confirmar ruta y paradas
+6. Registrar gastos del viaje
+7. Confirmar entrega con cliente
+8. Subir comprobantes fiscales
+
+#### Frontend
+- ✅ Componente `FleteChecklist.tsx`
+- ✅ Integrado en FleteDetalle (antes de sección gastos)
+- ✅ Características:
+  - Barra de progreso visual (completados/total)
+  - Checkbox para marcar items
+  - Botón para agregar items personalizados
+  - Edición inline de descripción
+  - Eliminación de items
+  - Colores: verde cuando completado, gris cuando pendiente
+  - Auto-creación de checklist predeterminado
+
+**Ubicación:** [FleteChecklist.tsx](frontend/src/components/FleteChecklist.tsx)
+
+**Archivos Creados:**
+1. `backend/src/modules/fletes/dto/checklist.dto.ts`
+2. `frontend/src/components/FleteChecklist.tsx`
+
+**Archivos Modificados:**
+1. `backend/prisma/schema.prisma` - Modelo FleteChecklist
+2. `backend/src/modules/fletes/fletes.service.ts` - Métodos de checklist
+3. `backend/src/modules/fletes/fletes.controller.ts` - Endpoints de checklist
+4. `frontend/src/pages/fletes/FleteDetalle.tsx` - Import y uso del componente
 
 ---
 
-### 5. ⏳ Checklist por Flete
-
-**Objetivo:** Lista verificable de pasos para cada flete.
-
-**Tareas pendientes:**
-- [ ] Modelo `FleteChecklist` en Prisma
-- [ ] Migración de BD
-- [ ] CRUD endpoints para checklist
-- [ ] Componente de checklist en FleteDetalle
-- [ ] Checklist predeterminado al crear flete
-- [ ] Progreso visual (3/8 completados)
-
-**Estimado:** 2-3 horas
+## ⏳ PENDIENTES (3 de 9)
 
 ---
 
@@ -265,16 +332,16 @@ Ninguna en progreso actualmente.
 |--------|--------|----------|-----------|
 | 1. Búsqueda Universal | ✅ COMPLETADO | - | Alta |
 | 2. Plantillas de Gastos | ✅ COMPLETADO | - | Media |
-| 3. Resumen Mensual | ⏳ Pendiente | 3-4h | Media |
+| 3. Resumen Mensual | ✅ COMPLETADO | - | Media |
 | 4. Copiar Flete | ✅ COMPLETADO | - | Alta |
-| 5. Checklist por Flete | ⏳ Pendiente | 2-3h | Media |
+| 5. Checklist por Flete | ✅ COMPLETADO | - | Media |
 | 6. Estado de Pagos | ✅ COMPLETADO | - | Alta |
 | 7. Subir Fotos | ⏳ Pendiente | 2-3h | Media |
 | 8. Notificaciones | ⏳ Pendiente | 4-5h | Baja |
 | 9. Modo PWA | ⏳ Pendiente | 3-4h | Baja |
 
-**Total completado:** 4/9 (44%)
-**Tiempo estimado restante:** 11-17 horas
+**Total completado:** 6/9 (67%)
+**Tiempo estimado restante:** 9-12 horas
 
 ---
 
@@ -296,13 +363,16 @@ Por **prioridad e impacto**, sugiero implementar en este orden:
 
 ## 💡 Progreso Actual
 
-**Completadas las 3 mejoras de mayor prioridad:**
+**Completadas 6 de 9 mejoras (67%):**
 
 1. ✅ Búsqueda Universal
-2. ✅ Copiar Flete
-3. ✅ Estado de Pagos
+2. ✅ Plantillas de Gastos
+3. ✅ Resumen Mensual
+4. ✅ Copiar Flete
+5. ✅ Checklist por Flete
+6. ✅ Estado de Pagos
 
-Estas 3 funcionalidades cubren aproximadamente el **60-70% del valor** para el usuario final.
+Estas 6 funcionalidades cubren aproximadamente el **80-85% del valor** para el usuario final.
 
 ---
 

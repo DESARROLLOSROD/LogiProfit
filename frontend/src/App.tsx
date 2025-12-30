@@ -23,6 +23,7 @@ import Camiones from './pages/camiones/Camiones'
 import Choferes from './pages/choferes/Choferes'
 import Clientes from './pages/clientes/Clientes'
 import Reportes from './pages/reportes/Reportes'
+import ResumenMensual from './pages/reportes/ResumenMensual'
 import Configuracion from './pages/Configuracion'
 import Usuarios from './pages/usuarios/Usuarios'
 import Integraciones from './pages/integraciones/Integraciones'
@@ -105,6 +106,7 @@ export default function App() {
 
         {/* Reportes */}
         <Route path="/reportes" element={<Reportes />} />
+        <Route path="/reportes/resumen-mensual" element={<ResumenMensual />} />
 
         {/* Integraciones */}
         <Route path="/integraciones" element={<Integraciones />} />

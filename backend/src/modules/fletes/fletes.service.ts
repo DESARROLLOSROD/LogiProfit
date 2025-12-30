@@ -5,6 +5,7 @@ import { UpdateFleteDto } from './dto/update-flete.dto';
 import { AsignarCamionDto } from './dto/asignar-camion.dto';
 import { AsignarChoferDto } from './dto/asignar-chofer.dto';
 import { UpdatePagoFleteDto } from './dto/update-pago-flete.dto';
+import { CreateChecklistItemDto, UpdateChecklistItemDto, UpdateChecklistDescripcionDto } from './dto/checklist.dto';
 import { EstadoFlete, EstadoPago, TipoPago } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
@@ -458,5 +459,158 @@ export class FletesService {
 
     // Retornar el flete completo con todas sus relaciones
     return this.findOne(nuevoFlete.id, empresaId);
+  }
+
+  // ==================== CHECKLIST ====================
+
+  // Plantilla predeterminada para checklists de fletes
+  private getChecklistPredeterminado(): string[] {
+    return [
+      'Asignar camión y chofer',
+      'Confirmar horario de carga',
+      'Revisar documentación del camión',
+      'Verificar seguro de carga',
+      'Confirmar ruta y paradas',
+      'Registrar gastos del viaje',
+      'Confirmar entrega con cliente',
+      'Subir comprobantes fiscales',
+    ];
+  }
+
+  async crearChecklistPredeterminado(fleteId: number, empresaId: number) {
+    // Verificar que el flete existe y pertenece a la empresa
+    await this.findOne(fleteId, empresaId);
+
+    // Obtener checklist predeterminado
+    const items = this.getChecklistPredeterminado();
+
+    // Crear items en paralelo
+    const checklistItems = await Promise.all(
+      items.map((descripcion, index) =>
+        this.prisma.fleteChecklist.create({
+          data: {
+            fleteId,
+            descripcion,
+            orden: index + 1,
+            completado: false,
+          },
+        }),
+      ),
+    );
+
+    return checklistItems;
+  }
+
+  async getChecklist(fleteId: number, empresaId: number) {
+    // Verificar que el flete existe
+    await this.findOne(fleteId, empresaId);
+
+    const items = await this.prisma.fleteChecklist.findMany({
+      where: { fleteId },
+      orderBy: { orden: 'asc' },
+    });
+
+    // Si no hay items, crear el checklist predeterminado
+    if (items.length === 0) {
+      return this.crearChecklistPredeterminado(fleteId, empresaId);
+    }
+
+    return items;
+  }
+
+  async agregarItemChecklist(
+    fleteId: number,
+    empresaId: number,
+    createDto: CreateChecklistItemDto,
+  ) {
+    // Verificar que el flete existe
+    await this.findOne(fleteId, empresaId);
+
+    // Obtener el último orden
+    const lastItem = await this.prisma.fleteChecklist.findFirst({
+      where: { fleteId },
+      orderBy: { orden: 'desc' },
+    });
+
+    const orden = createDto.orden || (lastItem ? lastItem.orden + 1 : 1);
+
+    return this.prisma.fleteChecklist.create({
+      data: {
+        fleteId,
+        descripcion: createDto.descripcion,
+        orden,
+        completado: false,
+      },
+    });
+  }
+
+  async marcarChecklistItem(
+    fleteId: number,
+    itemId: number,
+    empresaId: number,
+    updateDto: UpdateChecklistItemDto,
+  ) {
+    // Verificar que el flete existe
+    await this.findOne(fleteId, empresaId);
+
+    // Verificar que el item pertenece al flete
+    const item = await this.prisma.fleteChecklist.findFirst({
+      where: { id: itemId, fleteId },
+    });
+
+    if (!item) {
+      throw new NotFoundException('Item de checklist no encontrado');
+    }
+
+    return this.prisma.fleteChecklist.update({
+      where: { id: itemId },
+      data: { completado: updateDto.completado },
+    });
+  }
+
+  async actualizarDescripcionChecklistItem(
+    fleteId: number,
+    itemId: number,
+    empresaId: number,
+    updateDto: UpdateChecklistDescripcionDto,
+  ) {
+    // Verificar que el flete existe
+    await this.findOne(fleteId, empresaId);
+
+    // Verificar que el item pertenece al flete
+    const item = await this.prisma.fleteChecklist.findFirst({
+      where: { id: itemId, fleteId },
+    });
+
+    if (!item) {
+      throw new NotFoundException('Item de checklist no encontrado');
+    }
+
+    return this.prisma.fleteChecklist.update({
+      where: { id: itemId },
+      data: { descripcion: updateDto.descripcion },
+    });
+  }
+
+  async eliminarChecklistItem(
+    fleteId: number,
+    itemId: number,
+    empresaId: number,
+  ) {
+    // Verificar que el flete existe
+    await this.findOne(fleteId, empresaId);
+
+    // Verificar que el item pertenece al flete
+    const item = await this.prisma.fleteChecklist.findFirst({
+      where: { id: itemId, fleteId },
+    });
+
+    if (!item) {
+      throw new NotFoundException('Item de checklist no encontrado');
+    }
+
+    return this.prisma.fleteChecklist.delete({
+      where: { id: itemId },
+    });
   }
 }

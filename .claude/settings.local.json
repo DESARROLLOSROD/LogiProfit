@@ -19,7 +19,8 @@
       "Bash(npm ls:*)",
       "Bash(npx prisma migrate deploy)",
       "Bash(dir:*)",
-      "Bash(npx prisma db push:*)"
+      "Bash(npx prisma db push:*)",
+      "Bash(timeout 30 npm run build:*)"
     ]
   }
 }
