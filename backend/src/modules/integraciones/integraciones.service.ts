@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateConfiguracionMapeoDto } from './dto/create-configuracion-mapeo.dto';
 import { UpdateConfiguracionMapeoDto } from './dto/update-configuracion-mapeo.dto';
 import { ExportarFletesDto } from './dto/exportar-fletes.dto';
+import { ComparacionResult, DiferenciaFlete } from './dto/comparar-fletes.dto';
 import { TipoArchivo, TipoOperacion } from '@prisma/client';
 import { ExcelParser } from './parsers/excel.parser';
 import { CsvParser } from './parsers/csv.parser';
@@ -262,8 +263,9 @@ export class IntegracionesService {
     });
 
     // Filtrar por IDs si se especificaron
-    const fletesAExportar = dto.fleteIds
-      ? fletes.filter((f) => dto.fleteIds.includes(f.id))
+    const fleteIds = dto.fleteIds;
+    const fletesAExportar = fleteIds
+      ? fletes.filter((f) => fleteIds.includes(f.id))
       : fletes;
 
     // Obtener exporter según formato
@@ -357,5 +359,180 @@ export class IntegracionesService {
       default:
         throw new BadRequestException(`Tipo de archivo no soportado: ${tipo}`);
     }
+  }
+
+  // ==================== COMPARACIÓN Y RECONCILIACIÓN ====================
+
+  async compararConArchivo(
+    file: Express.Multer.File,
+    configuracionMapeoId: number,
+    empresaId: number,
+  ): Promise<ComparacionResult> {
+    // Obtener configuración
+    const config = await this.findOneConfiguracion(configuracionMapeoId, empresaId);
+
+    // Parsear archivo
+    const parser = this.getParser(config.tipoArchivo);
+    const { rows } = await this.parseFile(parser, file.buffer);
+
+    // Mapear folios del archivo
+    const foliosArchivo = new Map<string, any>();
+    for (const row of rows) {
+      const dto = await this.mapperService.mapToFlete(row, config, empresaId);
+      if (dto.folio) {
+        foliosArchivo.set(dto.folio, dto);
+      }
+    }
+
+    // Obtener todos los fletes de LogiProfit
+    const fletesLogiProfit = await this.prisma.flete.findMany({
+      where: { empresaId },
+      include: {
+        cliente: true,
+        gastos: true,
+      },
+    });
+
+    // Mapear folios de LogiProfit
+    const foliosLogiProfit = new Map<string, any>();
+    for (const flete of fletesLogiProfit) {
+      if (flete.folio) {
+        foliosLogiProfit.set(flete.folio, flete);
+      }
+    }
+
+    // Análisis de diferencias
+    const diferencias: DiferenciaFlete[] = [];
+    const fletesSoloEnArchivo: string[] = [];
+    const fletesSoloEnLogiProfit: string[] = [];
+    const gastosPorFolio: Record<string, any> = {};
+
+    let fletesCoincidentes = 0;
+    let fletesConDiferencias = 0;
+
+    // Comparar folios del archivo vs LogiProfit
+    for (const [folio, datosArchivo] of foliosArchivo.entries()) {
+      const fleteLogipro = foliosLogiProfit.get(folio);
+
+      if (!fleteLogipro) {
+        // Flete existe en archivo pero no en LogiProfit
+        fletesSoloEnArchivo.push(folio);
+      } else {
+        // Comparar campos
+        const difs = this.compararCamposFlete(folio, fleteLogipro.id, datosArchivo, fleteLogipro);
+
+        if (difs.length > 0) {
+          diferencias.push(...difs);
+          fletesConDiferencias++;
+        } else {
+          fletesCoincidentes++;
+        }
+
+        // Agregar gastos asociados
+        if (fleteLogipro.gastos && fleteLogipro.gastos.length > 0) {
+          const totalGastos = fleteLogipro.gastos.reduce(
+            (sum: number, g: any) => sum + (Number(g.monto) || 0),
+            0,
+          );
+
+          gastosPorFolio[folio] = {
+            totalGastos,
+            cantidadGastos: fleteLogipro.gastos.length,
+            gastos: fleteLogipro.gastos.map((g: any) => ({
+              id: g.id,
+              tipo: g.tipoGasto,
+              monto: Number(g.monto),
+              descripcion: g.descripcion,
+              fecha: g.fecha,
+            })),
+          };
+        }
+      }
+    }
+
+    // Folios que solo están en LogiProfit
+    for (const [folio] of foliosLogiProfit.entries()) {
+      if (!foliosArchivo.has(folio)) {
+        fletesSoloEnLogiProfit.push(folio);
+      }
+    }
+
+    return {
+      totalFletesArchivo: foliosArchivo.size,
+      totalFletesLogiProfit: foliosLogiProfit.size,
+      fletesCoincidentes,
+      fletesConDiferencias,
+      fletesSoloEnArchivo,
+      fletesSoloEnLogiProfit,
+      diferencias,
+      gastosPorFolio,
+    };
+  }
+
+  private compararCamposFlete(
+    folio: string,
+    fleteId: number,
+    datosArchivo: any,
+    fleteLogiProfit: any,
+  ): DiferenciaFlete[] {
+    const diferencias: DiferenciaFlete[] = [];
+
+    // Comparar cliente (por nombre)
+    const clienteArchivo = datosArchivo.clienteId; // Aquí vendría el nombre del cliente
+    const clienteLogiProfit = fleteLogiProfit.cliente?.nombre;
+
+    // Comparar origen
+    if (datosArchivo.origen && datosArchivo.origen !== fleteLogiProfit.origen) {
+      diferencias.push({
+        folio,
+        fleteId,
+        campo: 'origen',
+        valorLogiProfit: fleteLogiProfit.origen,
+        valorArchivo: datosArchivo.origen,
+        tipoConflicto: 'diferencia',
+      });
+    }
+
+    // Comparar destino
+    if (datosArchivo.destino && datosArchivo.destino !== fleteLogiProfit.destino) {
+      diferencias.push({
+        folio,
+        fleteId,
+        campo: 'destino',
+        valorLogiProfit: fleteLogiProfit.destino,
+        valorArchivo: datosArchivo.destino,
+        tipoConflicto: 'diferencia',
+      });
+    }
+
+    // Comparar precio (con tolerancia de 0.01)
+    const precioArchivo = Number(datosArchivo.precioCliente) || 0;
+    const precioLogiProfit = Number(fleteLogiProfit.precioCliente) || 0;
+    if (Math.abs(precioArchivo - precioLogiProfit) > 0.01) {
+      diferencias.push({
+        folio,
+        fleteId,
+        campo: 'precioCliente',
+        valorLogiProfit: precioLogiProfit,
+        valorArchivo: precioArchivo,
+        tipoConflicto: 'diferencia',
+      });
+    }
+
+    // Comparar kmReales
+    const kmArchivo = Number(datosArchivo.kmReales) || 0;
+    const kmLogiProfit = Number(fleteLogiProfit.kmReales) || 0;
+    if (kmArchivo > 0 && Math.abs(kmArchivo - kmLogiProfit) > 0.1) {
+      diferencias.push({
+        folio,
+        fleteId,
+        campo: 'kmReales',
+        valorLogiProfit: kmLogiProfit,
+        valorArchivo: kmArchivo,
+        tipoConflicto: 'diferencia',
+      });
+    }
+
+    return diferencias;
   }
 }

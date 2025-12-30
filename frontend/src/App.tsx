@@ -27,6 +27,7 @@ import Usuarios from './pages/usuarios/Usuarios'
 import Integraciones from './pages/integraciones/Integraciones'
 import NuevaConfiguracion from './pages/integraciones/NuevaConfiguracion'
 import ImportarArchivo from './pages/integraciones/ImportarArchivo'
+import CompararArchivo from './pages/integraciones/CompararArchivo'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
@@ -108,6 +109,7 @@ export default function App() {
         <Route path="/integraciones/nueva" element={<NuevaConfiguracion />} />
         <Route path="/integraciones/editar/:id" element={<NuevaConfiguracion />} />
         <Route path="/integraciones/importar" element={<ImportarArchivo />} />
+        <Route path="/integraciones/comparar" element={<CompararArchivo />} />
 
         {/* Configuración */}
         <Route path="/configuracion" element={<Configuracion />} />

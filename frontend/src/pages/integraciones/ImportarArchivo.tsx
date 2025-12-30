@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Eye, Upload, CheckCircle, XCircle } from 'lucide-react';
-import { useIntegracionesStore } from '../../stores\integracionesStore';
+import { ArrowLeft, Eye, Upload, XCircle } from 'lucide-react';
+import { useIntegracionesStore } from '../../stores/integracionesStore';
 import FileDropzone from '../../components/integraciones/FileDropzone';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
@@ -107,8 +107,8 @@ export default function ImportarArchivo() {
           >
             <option value="">-- Selecciona una configuración --</option>
             {configuraciones
-              .filter((c) => c.activa)
-              .map((config) => (
+              .filter((c: any) => c.activa)
+              .map((config: any) => (
                 <option key={config.id} value={config.id}>
                   {config.nombre} ({config.sistema} - {config.tipoArchivo})
                 </option>

@@ -62,7 +62,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
               {' '}Por favor, intenta recargar la página.
             </p>
 
-            {this.state.error && process.env.NODE_ENV === 'development' && (
+            {this.state.error && (
               <div className="mb-6">
                 <details className="text-sm">
                   <summary className="cursor-pointer text-gray-700 font-medium mb-2">

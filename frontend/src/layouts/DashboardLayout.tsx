@@ -13,6 +13,7 @@ import {
   Bars3Icon,
   XMarkIcon,
   ClipboardDocumentListIcon,
+  ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline'
 
 const navigation = [
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'Choferes', href: '/choferes', icon: UserGroupIcon },
   { name: 'Clientes', href: '/clientes', icon: UsersIcon },
   { name: 'Reportes', href: '/reportes', icon: ChartBarIcon },
+  { name: 'Integraciones', href: '/integraciones', icon: ArrowsRightLeftIcon },
   { name: 'Usuarios', href: '/usuarios', icon: UsersIcon },
   { name: 'Configuración', href: '/configuracion', icon: Cog6ToothIcon },
 ]

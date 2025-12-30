@@ -4,8 +4,6 @@ import {
   TruckIcon,
   BanknotesIcon,
   DocumentTextIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
   PlusIcon,
   PencilIcon,
   TrashIcon
@@ -49,6 +47,16 @@ interface Cotizacion {
   precioCotizado: number
   utilidadEsperada: number
   margenEsperado: number
+
+  // Costos desglosados
+  costoDieselCargado?: number
+  costoDieselVacio?: number
+  costoCasetasTotal?: number
+  costoViaticosTotal?: number
+  costoMantenimiento?: number
+  costoIndirectos?: number
+  costoCarroPilotoTotal?: number
+  requiereCarroPiloto?: boolean
 
   estado: string
   notas?: string
@@ -240,7 +248,7 @@ export default function CotizacionDetalle() {
       costosIndirectos: cotizacion.costoIndirectos,
       costoAutoPiloto: cotizacion.costoCarroPilotoTotal,
       costoTotal: cotizacion.costoTotal,
-      requiereAutoPiloto: cotizacion.requiereCarroPiloto,
+      requiereAutoPiloto: cotizacion.requiereCarroPiloto ?? false,
     })
 
     toast.success('PDF generado exitosamente')

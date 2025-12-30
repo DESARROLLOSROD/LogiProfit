@@ -182,6 +182,61 @@ export class IntegracionesController {
     );
   }
 
+  // ==================== COMPARACIÓN ====================
+
+  @Post('comparar')
+  @ApiOperation({ summary: 'Comparar archivo con fletes en LogiProfit' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        configuracionMapeoId: { type: 'number' },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (req, file, cb) => {
+        const allowedMimes = [
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-excel',
+          'text/csv',
+          'application/xml',
+          'text/xml',
+        ];
+        if (allowedMimes.includes(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(
+            new BadRequestException(
+              'Tipo de archivo no permitido. Solo: Excel, CSV, XML',
+            ),
+            false,
+          );
+        }
+      },
+    }),
+  )
+  async comparar(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('configuracionMapeoId', ParseIntPipe) configuracionMapeoId: number,
+    @Request() req: any,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No se recibió ningún archivo');
+    }
+
+    const empresaId = req.user.empresa.id;
+    return this.integracionesService.compararConArchivo(
+      file,
+      configuracionMapeoId,
+      empresaId,
+    );
+  }
+
   // ==================== EXPORTACIÓN ====================
 
   @Post('exportar')

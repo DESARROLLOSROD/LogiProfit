@@ -1,8 +1,7 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileUp, Edit, Trash2, Download, List } from 'lucide-react';
+import { Plus, FileUp, Edit, Trash2, Scale } from 'lucide-react';
 import { useIntegracionesStore } from '../../stores/integracionesStore';
-import toast from 'react-hot-toast';
 
 export default function Integraciones() {
   const navigate = useNavigate();
@@ -66,6 +65,13 @@ export default function Integraciones() {
           </p>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={() => navigate('/integraciones/comparar')}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+          >
+            <Scale className="h-4 w-4" />
+            Comparar Archivo
+          </button>
           <button
             onClick={() => navigate('/integraciones/importar')}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"

@@ -54,7 +54,7 @@ interface IntegracionesState {
 
 export const useIntegracionesStore = create<IntegracionesState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       configuraciones: [],
       configuracionActual: null,
       logs: [],
