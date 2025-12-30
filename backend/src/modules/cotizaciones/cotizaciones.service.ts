@@ -162,7 +162,20 @@ export class CotizacionesService {
       throw new BadRequestException('No se puede eliminar una cotización con fletes asociados');
     }
 
-    return this.prisma.cotizacion.delete({ where: { id } });
+    try {
+      // Usar transacción para eliminar conceptos y cotización de forma atómica
+      return await this.prisma.$transaction(async (tx) => {
+        // Primero eliminar los conceptos asociados
+        await tx.cotizacionConcepto.deleteMany({
+          where: { cotizacionId: id },
+        });
+
+        // Luego eliminar la cotización
+        return await tx.cotizacion.delete({ where: { id } });
+      });
+    } catch (error) {
+      throw new BadRequestException(`No se pudo eliminar la cotización: ${error.message}`);
+    }
   }
 
   // ==================== GESTIÓN DE CONCEPTOS ====================
