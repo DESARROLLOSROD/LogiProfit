@@ -21,6 +21,7 @@ import { SearchModule } from './modules/search/search.module';
 import { PlantillasGastoModule } from './modules/plantillas-gasto/plantillas-gasto.module';
 import { DocumentosModule } from './modules/documentos/documentos.module';
 import { FacturasModule } from './modules/facturas/facturas.module';
+import { SolicitudesModule } from './modules/solicitudes-combustible/solicitudes.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { FacturasModule } from './modules/facturas/facturas.module';
     SearchModule,
     DocumentosModule,
     FacturasModule,
+    SolicitudesModule,
   ],
   providers: [
     {

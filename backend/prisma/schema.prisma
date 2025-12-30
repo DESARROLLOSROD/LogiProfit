@@ -52,8 +52,9 @@ model Usuario {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
-  empresa  Empresa               @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  permisos UsuarioPermiso[]
+  empresa               Empresa                @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  permisos              UsuarioPermiso[]
+  solicitudesCombustible SolicitudCombustible[] @relation("SolicitudesOperador")
 
   @@index([empresaId])
   @@index([email])
@@ -217,9 +218,10 @@ model Flete {
   cliente      Cliente            @relation(fields: [clienteId], references: [id])
   camiones     FleteCamion[]
   choferes     FleteChofer[]
-  gastos       Gasto[]
-  checklist    FleteChecklist[]
-  factura      Factura?
+  gastos              Gasto[]
+  checklist           FleteChecklist[]
+  factura             Factura?
+  solicitudesCombustible SolicitudCombustible[]
 
   @@index([empresaId, estado])
   @@index([empresaId, estadoPago])
@@ -622,6 +624,62 @@ enum EstadoPagoFactura {
   PAGADA
   VENCIDA
   CANCELADA
+}
+
+// ==================== SOLICITUDES DE COMBUSTIBLE ====================
+
+model SolicitudCombustible {
+  id          Int              @id @default(autoincrement())
+  fleteId     Int
+  operadorId  Int
+  estado      EstadoSolicitud  @default(PENDIENTE)
+  montoTotal  Decimal          @db.Decimal(12, 2)
+
+  // Aprobación y depósito
+  aprobadoPor    Int?
+  aprobadoAt     DateTime?
+  depositadoPor  Int?
+  depositadoAt   DateTime?
+  rechazadoPor   Int?
+  rechazadoAt    DateTime?
+  motivoRechazo  String?
+
+  notas       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  flete    Flete              @relation(fields: [fleteId], references: [id], onDelete: Cascade)
+  operador Usuario            @relation("SolicitudesOperador", fields: [operadorId], references: [id])
+  paradas  SolicitudParada[]
+
+  @@index([fleteId])
+  @@index([operadorId])
+  @@index([estado])
+  @@map("solicitudes_combustible")
+}
+
+model SolicitudParada {
+  id           Int      @id @default(autoincrement())
+  solicitudId  Int
+  orden        Int      @default(0) // Orden de la parada
+  lugar        String   // "Gasolinera X, Ciudad Y"
+  litros       Decimal  @db.Decimal(10, 2)
+  precioLitro  Decimal  @db.Decimal(10, 2)
+  total        Decimal  @db.Decimal(12, 2) // litros * precioLitro
+  notas        String?
+  createdAt    DateTime @default(now())
+
+  solicitud SolicitudCombustible @relation(fields: [solicitudId], references: [id], onDelete: Cascade)
+
+  @@index([solicitudId])
+  @@map("solicitud_paradas")
+}
+
+enum EstadoSolicitud {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+  DEPOSITADA
 }
 
 // ==================== INTEGRACIONES EXTERNAS ====================
