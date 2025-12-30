@@ -5,7 +5,8 @@ import {
   CheckIcon,
   TruckIcon,
   UserIcon,
-  XMarkIcon
+  XMarkIcon,
+  DocumentDuplicateIcon
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
@@ -18,6 +19,10 @@ interface Flete {
   destino: string
   precioCliente: number
   estado: string
+  estadoPago?: string
+  montoPagado?: number
+  fechaVencimiento?: string
+  fechaPago?: string
   camiones: Array<{ id: number; camion: { id: number; placas: string; numeroEconomico?: string } }>
   choferes: Array<{
     id: number
@@ -72,6 +77,7 @@ export default function FleteDetalle() {
   const [showGastoModal, setShowGastoModal] = useState(false)
   const [showCamionModal, setShowCamionModal] = useState(false)
   const [showChoferModal, setShowChoferModal] = useState(false)
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false)
 
   // Catálogos
   const [camionesDisponibles, setCamionesDisponibles] = useState<Camion[]>([])
@@ -84,6 +90,10 @@ export default function FleteDetalle() {
     choferId: '',
     dias: '',
     kmReales: '',
+  })
+  const [duplicateOptions, setDuplicateOptions] = useState({
+    copyGastos: false,
+    copyAsignaciones: true,
   })
 
   useEffect(() => {
@@ -247,8 +257,62 @@ export default function FleteDetalle() {
     } catch {}
   }
 
+  const duplicarFlete = async () => {
+    try {
+      const params = new URLSearchParams({
+        copyGastos: duplicateOptions.copyGastos.toString(),
+        copyAsignaciones: duplicateOptions.copyAsignaciones.toString(),
+      })
+
+      const response = await api.post(`/fletes/${id}/duplicate?${params}`)
+      toast.success(`Flete duplicado: ${response.data.folio}`)
+      setShowDuplicateModal(false)
+
+      // Navegar al nuevo flete
+      navigate(`/fletes/${response.data.id}`)
+    } catch (error) {
+      toast.error('Error al duplicar el flete')
+    }
+  }
+
   const formatMoney = (amount: number) =>
     new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount)
+
+  const getPaymentStatusBadge = (estadoPago: string | undefined) => {
+    if (!estadoPago) return null
+
+    const badges = {
+      PENDIENTE: {
+        label: 'Pago Pendiente',
+        className: 'bg-yellow-100 text-yellow-800',
+        icon: '⏳',
+      },
+      PARCIAL: {
+        label: 'Pago Parcial',
+        className: 'bg-blue-100 text-blue-800',
+        icon: '💰',
+      },
+      PAGADO: {
+        label: 'Pagado',
+        className: 'bg-green-100 text-green-800',
+        icon: '✅',
+      },
+      VENCIDO: {
+        label: 'Pago Vencido',
+        className: 'bg-red-100 text-red-800',
+        icon: '🔴',
+      },
+    }
+
+    const badge = badges[estadoPago as keyof typeof badges]
+    if (!badge) return null
+
+    return (
+      <span className={`px-3 py-1 rounded-full text-sm font-medium ${badge.className}`}>
+        {badge.icon} {badge.label}
+      </span>
+    )
+  }
 
   if (loading)
     return (
@@ -266,10 +330,20 @@ export default function FleteDetalle() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{flete.folio}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900">{flete.folio}</h1>
+            {getPaymentStatusBadge(flete.estadoPago)}
+          </div>
           <p className="text-gray-500">{flete.cliente.nombre}</p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowDuplicateModal(true)}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <DocumentDuplicateIcon className="w-5 h-5" />
+            Duplicar
+          </button>
           {flete.estado === 'PLANEADO' && (
             <button onClick={() => cambiarEstado('EN_CURSO')} className="btn-primary">
               Iniciar Viaje
@@ -693,6 +767,91 @@ export default function FleteDetalle() {
               </button>
               <button onClick={asignarChofer} className="btn-primary flex-1">
                 Asignar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Duplicar Flete */}
+      {showDuplicateModal && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <DocumentDuplicateIcon className="w-6 h-6 text-primary-600" />
+                Duplicar Flete
+              </h3>
+              <button onClick={() => setShowDuplicateModal(false)}>
+                <XMarkIcon className="w-6 h-6 text-gray-400 hover:text-gray-600" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Se creará un nuevo flete con los datos base de <strong>{flete.folio}</strong>.
+                Elige qué información deseas copiar:
+              </p>
+
+              <div className="space-y-3">
+                <label className="flex items-start gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={duplicateOptions.copyAsignaciones}
+                    onChange={(e) =>
+                      setDuplicateOptions({
+                        ...duplicateOptions,
+                        copyAsignaciones: e.target.checked,
+                      })
+                    }
+                    className="mt-1"
+                  />
+                  <div>
+                    <div className="font-medium text-gray-900">Copiar asignaciones</div>
+                    <div className="text-sm text-gray-500">
+                      Camiones y choferes asignados al flete
+                    </div>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={duplicateOptions.copyGastos}
+                    onChange={(e) =>
+                      setDuplicateOptions({
+                        ...duplicateOptions,
+                        copyGastos: e.target.checked,
+                      })
+                    }
+                    className="mt-1"
+                  />
+                  <div>
+                    <div className="font-medium text-gray-900">Copiar gastos</div>
+                    <div className="text-sm text-gray-500">
+                      Gastos registrados (se marcarán como no validados)
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-900">
+                  <strong>Nota:</strong> El nuevo flete tendrá un folio diferente y estado PLANEADO.
+                  Las fechas y estados no se copiarán.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={() => setShowDuplicateModal(false)}
+                className="btn-secondary flex-1"
+              >
+                Cancelar
+              </button>
+              <button onClick={duplicarFlete} className="btn-primary flex-1">
+                Duplicar Flete
               </button>
             </div>
           </div>

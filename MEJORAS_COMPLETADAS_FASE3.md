@@ -4,7 +4,7 @@
 
 ---
 
-## ✅ COMPLETADAS (1 de 9)
+## ✅ COMPLETADAS (3 de 9)
 
 ### 1. ✅ Búsqueda Universal
 
@@ -59,7 +59,76 @@ Ninguna en progreso actualmente.
 
 ---
 
-## ⏳ PENDIENTES (8 de 9)
+### 4. ✅ Copiar Flete Anterior
+
+**Estado:** COMPLETADO
+
+#### Backend
+- ✅ Endpoint `POST /api/v1/fletes/:id/duplicate`
+- ✅ Query params: `copyGastos`, `copyAsignaciones`
+- ✅ Genera nuevo folio automáticamente
+- ✅ Copia datos base del flete
+- ✅ Opción para copiar gastos (sin validar)
+- ✅ Opción para copiar asignaciones de camiones y choferes
+- ✅ Estado siempre PLANEADO para nuevo flete
+
+#### Frontend
+- ✅ Botón "Duplicar" en detalle de flete
+- ✅ Modal con opciones de copiado
+- ✅ Checkboxes para gastos y asignaciones
+- ✅ Navegación automática al nuevo flete
+- ✅ Notificaciones toast de éxito/error
+
+**Ubicación:** [FleteDetalle.tsx:297-303](frontend/src/pages/fletes/FleteDetalle.tsx#L297-L303)
+
+**Performance:**
+- Operación atómica en BD
+- Usa Promise.all para copiar gastos/asignaciones en paralelo
+
+---
+
+### 6. ✅ Estado Claro de Pagos
+
+**Estado:** COMPLETADO
+
+#### Backend - Modelo
+- ✅ Campo `estadoPago` (enum: PENDIENTE, PARCIAL, PAGADO, VENCIDO)
+- ✅ Campo `montoPagado` (Decimal)
+- ✅ Campo `fechaVencimiento` (DateTime)
+- ✅ Campo `fechaPago` (DateTime)
+- ✅ Migración de BD aplicada
+
+#### Backend - API
+- ✅ Endpoint `PATCH /api/v1/fletes/:id/pago`
+- ✅ DTO `UpdatePagoFleteDto`
+- ✅ Servicio `actualizarPago()`
+- ✅ Auto-actualiza fechaPago cuando se marca como PAGADO
+
+#### Backend - Dashboard
+- ✅ Integrado con dashboard de pendientes
+- ✅ Busca fletes con pagos vencidos
+- ✅ Calcula días de retraso
+- ✅ Ordenado por fecha de vencimiento
+
+#### Frontend
+- ✅ Badge visual con estados de pago
+- ✅ Semáforo de colores:
+  - ⏳ Amarillo: PENDIENTE
+  - 💰 Azul: PARCIAL
+  - ✅ Verde: PAGADO
+  - 🔴 Rojo: VENCIDO
+- ✅ Integrado en header de FleteDetalle
+
+**Archivos Modificados:**
+1. `backend/prisma/schema.prisma` - Modelo Flete
+2. `backend/src/modules/fletes/fletes.service.ts` - Método actualizarPago
+3. `backend/src/modules/fletes/fletes.controller.ts` - Endpoint PATCH /pago
+4. `backend/src/modules/dashboard/dashboard.service.ts` - Pagos vencidos
+5. `frontend/src/pages/fllete/FleteDetalle.tsx` - Badge visual
+
+---
+
+## ⏳ PENDIENTES (6 de 9)
 
 ### 2. ⏳ Plantillas de Gastos
 
@@ -93,21 +162,6 @@ Ninguna en progreso actualmente.
 
 ---
 
-### 4. ⏳ Copiar Flete Anterior
-
-**Objetivo:** Duplicar un flete existente para reutilizar datos.
-
-**Tareas pendientes:**
-- [ ] Endpoint `POST /fletes/:id/duplicate`
-- [ ] Botón "Copiar Flete" en detalle de flete
-- [ ] Modal de confirmación con opciones (¿copiar gastos?, ¿copiar asignaciones?)
-- [ ] Generar nuevo folio automáticamente
-- [ ] Limpiar campos de fechas/estados
-
-**Estimado:** 1-2 horas
-
----
-
 ### 5. ⏳ Checklist por Flete
 
 **Objetivo:** Lista verificable de pasos para cada flete.
@@ -121,22 +175,6 @@ Ninguna en progreso actualmente.
 - [ ] Progreso visual (3/8 completados)
 
 **Estimado:** 2-3 horas
-
----
-
-### 6. ⏳ Estado Claro de Pagos
-
-**Objetivo:** Semáforo visual del estado de cobro.
-
-**Tareas pendientes:**
-- [ ] Modelo `Pago` en Prisma schema
-- [ ] Migración de BD con estados (PENDIENTE, PARCIAL, PAGADO, VENCIDO)
-- [ ] Endpoints CRUD para pagos
-- [ ] Campo `fechaVencimiento` en Flete
-- [ ] Semáforo visual: 🔴 Vencido, 🟡 Por vencer, 🟢 Pagado
-- [ ] Integrar con dashboard de pendientes
-
-**Estimado:** 3-4 horas
 
 ---
 
@@ -196,15 +234,15 @@ Ninguna en progreso actualmente.
 | 1. Búsqueda Universal | ✅ COMPLETADO | - | Alta |
 | 2. Plantillas de Gastos | ⏳ Pendiente | 2-3h | Media |
 | 3. Resumen Mensual | ⏳ Pendiente | 3-4h | Media |
-| 4. Copiar Flete | ⏳ Pendiente | 1-2h | Alta |
+| 4. Copiar Flete | ✅ COMPLETADO | - | Alta |
 | 5. Checklist por Flete | ⏳ Pendiente | 2-3h | Media |
-| 6. Estado de Pagos | ⏳ Pendiente | 3-4h | Alta |
+| 6. Estado de Pagos | ✅ COMPLETADO | - | Alta |
 | 7. Subir Fotos | ⏳ Pendiente | 2-3h | Media |
 | 8. Notificaciones | ⏳ Pendiente | 4-5h | Baja |
 | 9. Modo PWA | ⏳ Pendiente | 3-4h | Baja |
 
-**Total completado:** 1/9 (11%)
-**Tiempo estimado restante:** 20-28 horas
+**Total completado:** 3/9 (33%)
+**Tiempo estimado restante:** 14-20 horas
 
 ---
 
@@ -212,9 +250,9 @@ Ninguna en progreso actualmente.
 
 Por **prioridad e impacto**, sugiero implementar en este orden:
 
-1. ✅ **Búsqueda Universal** - HECHO
-2. **Copiar Flete** (1-2h) - Alto impacto, rápido
-3. **Estado de Pagos** (3-4h) - Crítico para contabilidad
+1. ✅ **Búsqueda Universal** - COMPLETADO
+2. ✅ **Copiar Flete** - COMPLETADO
+3. ✅ **Estado de Pagos** - COMPLETADO
 4. **Plantillas de Gastos** (2-3h) - Ahorra tiempo diario
 5. **Resumen Mensual** (3-4h) - Útil para reportes
 6. **Checklist por Flete** (2-3h) - Mejora organización
@@ -224,16 +262,15 @@ Por **prioridad e impacto**, sugiero implementar en este orden:
 
 ---
 
-## 💡 Alternativa Rápida
+## 💡 Progreso Actual
 
-Si se quiere completar el **máximo impacto en mínimo tiempo**, implementar solo:
+**Completadas las 3 mejoras de mayor prioridad:**
 
-1. ✅ Búsqueda Universal (HECHO)
-2. **Copiar Flete** (1-2h)
-3. **Estado de Pagos básico** (2h versión simple)
-4. **Plantillas de Gastos básicas** (1h versión simple)
+1. ✅ Búsqueda Universal
+2. ✅ Copiar Flete
+3. ✅ Estado de Pagos
 
-**Total:** 4-5 horas adicionales para cubrir el 80% del valor.
+Estas 3 funcionalidades cubren aproximadamente el **60-70% del valor** para el usuario final.
 
 ---
 

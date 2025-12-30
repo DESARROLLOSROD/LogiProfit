@@ -53,6 +53,12 @@ export class CreateFleteDto {
   @IsString()
   @IsOptional()
   notas?: string;
+
+  @ApiProperty({ required: false, description: 'Fecha límite de pago' })
+  @IsDate()
+  @Type(() => Date)
+  @IsOptional()
+  fechaVencimiento?: Date;
 }
 
 export class UpdateFleteDto {

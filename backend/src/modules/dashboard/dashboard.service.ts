@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { EstadoFlete, EstadoCotizacion } from '@prisma/client';
+import { EstadoFlete, EstadoCotizacion, EstadoPago } from '@prisma/client';
 
 interface FletesPendientes {
   sinGastosRegistrados: Array<{
@@ -45,12 +45,11 @@ interface XmlFaltantes {
 interface PagosVencidos {
   pagos: Array<{
     id: number;
-    flete: {
-      id: number;
-      folio: string;
-      cliente: { nombre: string };
-    };
-    fechaVencimiento?: Date;
+    folio: string;
+    cliente: { nombre: string };
+    precioCliente: any;
+    fechaVencimiento: Date | null;
+    estadoPago: string;
     diasVencido: number;
   }>;
   total: number;
@@ -171,9 +170,56 @@ export class DashboardService {
       take: 20,
     });
 
-    // 4. Pagos vencidos (lógica pendiente - requiere modelo de Pagos)
-    // Por ahora retornamos vacío, se implementará cuando exista el modelo
-    const pagosVencidos: any[] = [];
+    // 4. Pagos vencidos o pendientes
+    const fletesConPagosPendientes = await this.prisma.flete.findMany({
+      where: {
+        empresaId,
+        estado: {
+          in: [EstadoFlete.COMPLETADO, EstadoFlete.CERRADO],
+        },
+        OR: [
+          // Pagos vencidos
+          {
+            estadoPago: {
+              in: [EstadoPago.PENDIENTE, EstadoPago.PARCIAL],
+            },
+            fechaVencimiento: {
+              lt: hoy,
+            },
+          },
+          // O marcados explícitamente como VENCIDO
+          {
+            estadoPago: EstadoPago.VENCIDO,
+          },
+        ],
+      },
+      select: {
+        id: true,
+        folio: true,
+        cliente: {
+          select: {
+            nombre: true,
+          },
+        },
+        precioCliente: true,
+        fechaVencimiento: true,
+        estadoPago: true,
+      },
+      orderBy: {
+        fechaVencimiento: 'asc',
+      },
+      take: 20,
+    });
+
+    const pagosConDias = fletesConPagosPendientes.map((flete: any) => {
+      const diasVencido = flete.fechaVencimiento
+        ? Math.ceil((hoy.getTime() - flete.fechaVencimiento.getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+      return {
+        ...flete,
+        diasVencido,
+      };
+    });
 
     return {
       fletesSinGastos: {
@@ -189,8 +235,8 @@ export class DashboardService {
         total: gastosSinXml.length,
       },
       pagosVencidos: {
-        pagos: pagosVencidos,
-        total: 0,
+        pagos: pagosConDias,
+        total: pagosConDias.length,
       },
     };
   }

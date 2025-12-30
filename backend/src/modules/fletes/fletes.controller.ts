@@ -23,6 +23,7 @@ import { CreateFleteDto } from './dto/create-flete.dto';
 import { UpdateFleteDto } from './dto/update-flete.dto';
 import { AsignarCamionDto } from './dto/asignar-camion.dto';
 import { AsignarChoferDto } from './dto/asignar-chofer.dto';
+import { UpdatePagoFleteDto } from './dto/update-pago-flete.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EstadoFlete } from '@prisma/client';
 
@@ -92,6 +93,17 @@ export class FletesController {
     return this.fletesService.cambiarEstado(id, req.user.empresaId, estado);
   }
 
+  @Patch(':id/pago')
+  @ApiOperation({ summary: 'Actualizar estado de pago del flete' })
+  @ApiResponse({ status: 200, description: 'Estado de pago actualizado' })
+  actualizarPago(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updatePagoDto: UpdatePagoFleteDto,
+  ) {
+    return this.fletesService.actualizarPago(id, req.user.empresaId, updatePagoDto);
+  }
+
   @Get(':id/utilidad')
   @ApiOperation({ summary: 'Calcular utilidad del flete' })
   calcularUtilidad(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
@@ -138,5 +150,25 @@ export class FletesController {
     @Param('choferId', ParseIntPipe) choferId: number,
   ) {
     return this.fletesService.desasignarChofer(id, choferId, req.user.empresaId);
+  }
+
+  // ==================== DUPLICAR FLETE ====================
+
+  @Post(':id/duplicate')
+  @ApiOperation({ summary: 'Duplicar flete existente' })
+  @ApiQuery({ name: 'copyGastos', required: false, type: Boolean, description: 'Copiar gastos del flete original' })
+  @ApiQuery({ name: 'copyAsignaciones', required: false, type: Boolean, description: 'Copiar asignaciones de camiones y choferes' })
+  @ApiResponse({ status: 201, description: 'Flete duplicado exitosamente' })
+  duplicarFlete(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Query('copyGastos') copyGastos?: string,
+    @Query('copyAsignaciones') copyAsignaciones?: string,
+  ) {
+    const options = {
+      copyGastos: copyGastos === 'true',
+      copyAsignaciones: copyAsignaciones === 'true',
+    };
+    return this.fletesService.duplicarFlete(id, req.user.empresaId, options);
   }
 }

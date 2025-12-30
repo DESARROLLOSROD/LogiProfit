@@ -189,17 +189,23 @@ model Flete {
   cotizacionId  Int?
   clienteId     Int
   folio         String      @unique
-  
+
   origen        String
   destino       String
   kmReales      Decimal?    @db.Decimal(10, 2)
-  
+
   precioCliente Decimal     @db.Decimal(12, 2)
   estado        EstadoFlete @default(PLANEADO)
-  
+
   fechaInicio   DateTime?
   fechaFin      DateTime?
-  
+
+  // Campos de pago
+  estadoPago      EstadoPago? @default(PENDIENTE)
+  montoPagado     Decimal?    @db.Decimal(12, 2) @default(0)
+  fechaVencimiento DateTime?
+  fechaPago       DateTime?
+
   notas         String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -212,8 +218,10 @@ model Flete {
   gastos       Gasto[]
 
   @@index([empresaId, estado])
+  @@index([empresaId, estadoPago])
   @@index([clienteId])
   @@index([fechaInicio])
+  @@index([fechaVencimiento])
   @@index([createdAt])
   @@map("fletes")
 }
@@ -224,6 +232,13 @@ enum EstadoFlete {
   COMPLETADO
   CERRADO
   CANCELADO
+}
+
+enum EstadoPago {
+  PENDIENTE
+  PARCIAL
+  PAGADO
+  VENCIDO
 }
 
 // ==================== CAMIONES ====================

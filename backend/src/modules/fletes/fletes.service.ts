@@ -4,7 +4,8 @@ import { CreateFleteDto } from './dto/create-flete.dto';
 import { UpdateFleteDto } from './dto/update-flete.dto';
 import { AsignarCamionDto } from './dto/asignar-camion.dto';
 import { AsignarChoferDto } from './dto/asignar-chofer.dto';
-import { EstadoFlete, TipoPago } from '@prisma/client';
+import { UpdatePagoFleteDto } from './dto/update-pago-flete.dto';
+import { EstadoFlete, EstadoPago, TipoPago } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()
@@ -295,7 +296,7 @@ export class FletesService {
     for (const flete of fletes) {
       const ingresos = Number(flete.precioCliente);
       const gastos = flete.gastos.reduce((sum, g) => sum + Number(g.monto), 0);
-      
+
       totalIngresos += ingresos;
       totalGastos += gastos;
 
@@ -311,10 +312,151 @@ export class FletesService {
       totalIngresos,
       totalGastos,
       utilidadNeta: totalIngresos - totalGastos,
-      margenPromedio: totalIngresos > 0 
-        ? ((totalIngresos - totalGastos) / totalIngresos) * 100 
+      margenPromedio: totalIngresos > 0
+        ? ((totalIngresos - totalGastos) / totalIngresos) * 100
         : 0,
       fletesConPerdida,
     };
+  }
+
+  // ==================== PAGOS ====================
+
+  async actualizarPago(
+    fleteId: number,
+    empresaId: number,
+    updatePagoDto: UpdatePagoFleteDto,
+  ) {
+    // Verificar que el flete existe
+    await this.findOne(fleteId, empresaId);
+
+    const updateData: any = {
+      estadoPago: updatePagoDto.estadoPago,
+    };
+
+    // Si se proporciona monto pagado, actualizarlo
+    if (updatePagoDto.montoPagado !== undefined) {
+      updateData.montoPagado = updatePagoDto.montoPagado;
+    }
+
+    // Si se proporciona fecha de pago, actualizarla
+    if (updatePagoDto.fechaPago) {
+      updateData.fechaPago = updatePagoDto.fechaPago;
+    }
+
+    // Si se proporciona fecha de vencimiento, actualizarla
+    if (updatePagoDto.fechaVencimiento) {
+      updateData.fechaVencimiento = updatePagoDto.fechaVencimiento;
+    }
+
+    // Si se marca como PAGADO y no hay fecha de pago, usar fecha actual
+    if (updatePagoDto.estadoPago === EstadoPago.PAGADO && !updateData.fechaPago) {
+      updateData.fechaPago = new Date();
+    }
+
+    return this.prisma.flete.update({
+      where: { id: fleteId },
+      data: updateData,
+      include: {
+        cliente: true,
+      },
+    });
+  }
+
+  // ==================== DUPLICAR FLETE ====================
+
+  async duplicarFlete(
+    fleteId: number,
+    empresaId: number,
+    options: { copyGastos: boolean; copyAsignaciones: boolean },
+  ) {
+    // Obtener flete original con todas sus relaciones
+    const fleteOriginal = await this.findOne(fleteId, empresaId);
+
+    // Generar nuevo folio
+    const nuevoFolio = await this.generarFolio(empresaId);
+
+    // Crear el nuevo flete con los datos base del original
+    const nuevoFlete = await this.prisma.flete.create({
+      data: {
+        empresaId,
+        folio: nuevoFolio,
+        clienteId: fleteOriginal.clienteId,
+        cotizacionId: fleteOriginal.cotizacionId,
+        origen: fleteOriginal.origen,
+        destino: fleteOriginal.destino,
+        precioCliente: fleteOriginal.precioCliente,
+        kmReales: fleteOriginal.kmReales,
+        notas: fleteOriginal.notas
+          ? `[COPIA] ${fleteOriginal.notas}`
+          : '[COPIA] Flete duplicado',
+        // Estado siempre es PLANEADO para un nuevo flete
+        estado: EstadoFlete.PLANEADO,
+        // No copiar fechas - el nuevo flete es independiente
+      },
+      include: {
+        cliente: true,
+        cotizacion: true,
+      },
+    });
+
+    // Copiar gastos si se solicitó
+    if (options.copyGastos && fleteOriginal.gastos.length > 0) {
+      await Promise.all(
+        fleteOriginal.gastos.map((gasto) =>
+          this.prisma.gasto.create({
+            data: {
+              fleteId: nuevoFlete.id,
+              tipo: gasto.tipo,
+              concepto: gasto.concepto,
+              monto: gasto.monto,
+              fecha: new Date(), // Nueva fecha
+              validado: false, // Gastos copiados siempre sin validar
+              comprobanteUrl: gasto.comprobanteUrl,
+            },
+          }),
+        ),
+      );
+    }
+
+    // Copiar asignaciones si se solicitó
+    if (options.copyAsignaciones) {
+      // Copiar camiones
+      if (fleteOriginal.camiones.length > 0) {
+        await Promise.all(
+          fleteOriginal.camiones.map((asignacion) =>
+            this.prisma.fleteCamion.create({
+              data: {
+                fleteId: nuevoFlete.id,
+                camionId: asignacion.camionId,
+                principal: asignacion.principal,
+                notas: asignacion.notas,
+              },
+            }),
+          ),
+        );
+      }
+
+      // Copiar choferes (sin salarios automáticos)
+      if (fleteOriginal.choferes.length > 0) {
+        await Promise.all(
+          fleteOriginal.choferes.map((asignacion) =>
+            this.prisma.fleteChofer.create({
+              data: {
+                fleteId: nuevoFlete.id,
+                choferId: asignacion.choferId,
+                fechaInicio: new Date(), // Nueva fecha de inicio
+                dias: asignacion.dias,
+                kmReales: asignacion.kmReales,
+                notas: asignacion.notas,
+                // No copiar salarios - se calculan en el nuevo flete
+              },
+            }),
+          ),
+        );
+      }
+    }
+
+    // Retornar el flete completo con todas sus relaciones
+    return this.findOne(nuevoFlete.id, empresaId);
   }
 }
