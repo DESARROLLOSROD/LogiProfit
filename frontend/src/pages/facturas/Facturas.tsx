@@ -9,6 +9,8 @@ import {
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import Pagination from '../../components/Pagination'
+import { usePermissions } from '../../hooks/usePermissions'
+import { Modulo, Accion } from '../../utils/permissions'
 
 interface Factura {
   id: number
@@ -38,6 +40,7 @@ interface FletePendiente {
 }
 
 export default function Facturas() {
+  const { can } = usePermissions()
   const [facturas, setFacturas] = useState<Factura[]>([])
   const [fletesPendientes, setFletesPendientes] = useState<FletePendiente[]>([])
   const [loading, setLoading] = useState(true)
@@ -282,7 +285,7 @@ export default function Facturas() {
                         </span>
                       </td>
                       <td>
-                        {factura.estadoPago === 'PENDIENTE' && (
+                        {factura.estadoPago === 'PENDIENTE' && can(Modulo.FACTURAS, Accion.ACTUALIZAR) && (
                           <div className="flex gap-2">
                             <button
                               onClick={() => cambiarEstadoPago(factura.id, 'PAGADA')}

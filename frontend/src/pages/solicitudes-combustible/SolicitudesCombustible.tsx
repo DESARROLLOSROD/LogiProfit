@@ -12,6 +12,8 @@ import {
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import Pagination from '../../components/Pagination'
+import { usePermissions } from '../../hooks/usePermissions'
+import { Modulo, Accion } from '../../utils/permissions'
 
 interface Parada {
   id?: number
@@ -55,11 +57,11 @@ interface Flete {
 }
 
 export default function SolicitudesCombustible() {
+  const { can } = usePermissions()
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([])
   const [fletes, setFletes] = useState<Flete[]>([])
   const [loading, setLoading] = useState(true)
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
-  const [userRole, setUserRole] = useState<string>('OPERADOR')
 
   // Filtros
   const [busqueda, setBusqueda] = useState('')
@@ -100,17 +102,8 @@ export default function SolicitudesCombustible() {
 
   useEffect(() => {
     fetchData()
-    fetchUserRole()
   }, [])
 
-  const fetchUserRole = async () => {
-    try {
-      const res = await api.get('/auth/me')
-      setUserRole(res.data.rol)
-    } catch (error) {
-      console.error('Error al obtener rol:', error)
-    }
-  }
 
   const fetchData = async () => {
     try {
@@ -435,8 +428,8 @@ export default function SolicitudesCombustible() {
                   </td>
                   <td>
                     <div className="flex gap-2">
-                      {/* Aprobar (Mantenimiento) */}
-                      {solicitud.estado === 'PENDIENTE' && (userRole === 'ADMIN' || userRole === 'MANTENIMIENTO') && (
+                      {/* Aprobar (Mantenimiento/Operador/Direccion) */}
+                      {solicitud.estado === 'PENDIENTE' && can(Modulo.SOLICITUDES_COMBUSTIBLE, Accion.APROBAR) && (
                         <>
                           <button
                             onClick={() => {
@@ -462,7 +455,7 @@ export default function SolicitudesCombustible() {
                       )}
 
                       {/* Depositar (Contabilidad) */}
-                      {solicitud.estado === 'APROBADA' && (userRole === 'ADMIN' || userRole === 'CONTABILIDAD') && (
+                      {solicitud.estado === 'APROBADA' && can(Modulo.SOLICITUDES_COMBUSTIBLE, Accion.DEPOSITAR) && (
                         <button
                           onClick={() => {
                             setSolicitudSeleccionada(solicitud.id)
@@ -475,9 +468,9 @@ export default function SolicitudesCombustible() {
                         </button>
                       )}
 
-                      {/* Eliminar (Operador, solo pendientes/rechazadas) */}
+                      {/* Eliminar (Admin only, solo pendientes/rechazadas) */}
                       {(solicitud.estado === 'PENDIENTE' || solicitud.estado === 'RECHAZADA') &&
-                        (userRole === 'ADMIN' || userRole === 'OPERADOR') && (
+                        can(Modulo.SOLICITUDES_COMBUSTIBLE, Accion.CREAR) && (
                           <button
                             onClick={() => handleEliminar(solicitud.id)}
                             className="text-red-600 hover:text-red-800 p-1"

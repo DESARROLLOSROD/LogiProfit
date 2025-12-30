@@ -27,15 +27,19 @@ import { AsignarChoferDto } from './dto/asignar-chofer.dto';
 import { UpdatePagoFleteDto } from './dto/update-pago-flete.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EstadoFlete } from '@prisma/client';
+import { RolesGuard } from '../../common/rbac/roles.guard';
+import { RequirePermission } from '../../common/rbac/roles.decorator';
+import { Modulo, Accion } from '../../common/rbac/permissions.config';
 
 @ApiTags('fletes')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('fletes')
 export class FletesController {
   constructor(private readonly fletesService: FletesService) { }
 
   @Post()
+  @RequirePermission(Modulo.FLETES, Accion.CREAR)
   @ApiOperation({ summary: 'Crear nuevo flete' })
   @ApiResponse({ status: 201, description: 'Flete creado exitosamente' })
   create(@Request() req: any, @Body() createFleteDto: CreateFleteDto) {
@@ -43,6 +47,7 @@ export class FletesController {
   }
 
   @Get()
+  @RequirePermission(Modulo.FLETES, Accion.LEER)
   @ApiOperation({ summary: 'Listar todos los fletes' })
   @ApiQuery({ name: 'estado', required: false, enum: EstadoFlete })
   @ApiQuery({ name: 'clienteId', required: false, type: Number })
@@ -74,6 +79,7 @@ export class FletesController {
   }
 
   @Patch(':id')
+  @RequirePermission(Modulo.FLETES, Accion.ACTUALIZAR)
   @ApiOperation({ summary: 'Actualizar flete' })
   update(
     @Request() req: any,
@@ -95,6 +101,7 @@ export class FletesController {
   }
 
   @Delete(':id')
+  @RequirePermission(Modulo.FLETES, Accion.ELIMINAR)
   @ApiOperation({ summary: 'Eliminar flete' })
   @ApiResponse({ status: 200, description: 'Flete eliminado. Solo se pueden eliminar fletes en estado PLANEADO o CANCELADO.' })
   @ApiResponse({ status: 400, description: 'No se puede eliminar el flete en su estado actual' })

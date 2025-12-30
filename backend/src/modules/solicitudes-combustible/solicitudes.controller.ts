@@ -27,15 +27,19 @@ import {
 } from './dto/solicitud.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EstadoSolicitud } from '@prisma/client';
+import { RolesGuard } from '../../common/rbac/roles.guard';
+import { RequirePermission } from '../../common/rbac/roles.decorator';
+import { Modulo, Accion } from '../../common/rbac/permissions.config';
 
 @ApiTags('solicitudes-combustible')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('solicitudes-combustible')
 export class SolicitudesController {
   constructor(private readonly solicitudesService: SolicitudesService) {}
 
   @Post()
+  @RequirePermission(Modulo.SOLICITUDES_COMBUSTIBLE, Accion.CREAR)
   @ApiOperation({ summary: 'Crear nueva solicitud de combustible (operador)' })
   @ApiResponse({ status: 201, description: 'Solicitud creada exitosamente' })
   create(@Request() req: any, @Body() createSolicitudDto: CreateSolicitudDto) {
@@ -43,6 +47,7 @@ export class SolicitudesController {
   }
 
   @Get()
+  @RequirePermission(Modulo.SOLICITUDES_COMBUSTIBLE, Accion.LEER)
   @ApiOperation({ summary: 'Listar todas las solicitudes (admin/mantenimiento/contabilidad)' })
   @ApiQuery({ name: 'estado', required: false, enum: EstadoSolicitud })
   findAll(@Request() req: any, @Query('estado') estado?: EstadoSolicitud) {
@@ -69,6 +74,7 @@ export class SolicitudesController {
   }
 
   @Patch(':id/aprobar')
+  @RequirePermission(Modulo.SOLICITUDES_COMBUSTIBLE, Accion.APROBAR)
   @ApiOperation({ summary: 'Aprobar solicitud (mantenimiento)' })
   @ApiResponse({ status: 200, description: 'Solicitud aprobada' })
   @ApiResponse({ status: 400, description: 'Solo se pueden aprobar solicitudes PENDIENTES' })
@@ -81,6 +87,7 @@ export class SolicitudesController {
   }
 
   @Patch(':id/rechazar')
+  @RequirePermission(Modulo.SOLICITUDES_COMBUSTIBLE, Accion.RECHAZAR)
   @ApiOperation({ summary: 'Rechazar solicitud (mantenimiento)' })
   @ApiResponse({ status: 200, description: 'Solicitud rechazada' })
   @ApiResponse({ status: 400, description: 'Solo se pueden rechazar solicitudes PENDIENTES' })
@@ -93,6 +100,7 @@ export class SolicitudesController {
   }
 
   @Patch(':id/depositar')
+  @RequirePermission(Modulo.SOLICITUDES_COMBUSTIBLE, Accion.DEPOSITAR)
   @ApiOperation({ summary: 'Marcar como depositada (contabilidad)' })
   @ApiResponse({ status: 200, description: 'Solicitud marcada como depositada' })
   @ApiResponse({ status: 400, description: 'Solo se pueden depositar solicitudes APROBADAS' })

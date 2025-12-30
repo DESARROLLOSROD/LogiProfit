@@ -1,11 +1,12 @@
 import { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { usePermissions } from '../hooks/usePermissions'
+import { Modulo, Accion } from '../utils/permissions'
 
 interface PermissionGuardProps {
   children: ReactNode
-  modulo: string
-  accion: string
+  modulo: Modulo
+  accion: Accion
   fallback?: ReactNode
   redirectTo?: string
 }
@@ -17,9 +18,9 @@ export default function PermissionGuard({
   fallback,
   redirectTo = '/dashboard',
 }: PermissionGuardProps) {
-  const { hasPermission } = usePermissions()
+  const { can } = usePermissions()
 
-  if (!hasPermission(modulo, accion)) {
+  if (!can(modulo, accion)) {
     if (fallback) {
       return <>{fallback}</>
     }
