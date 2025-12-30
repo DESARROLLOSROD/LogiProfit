@@ -106,7 +106,11 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ token: state.token }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.token) {
+          api.defaults.headers.common['Authorization'] = `Bearer ${state.token}`
+        }
+      },
     }
   )
 )

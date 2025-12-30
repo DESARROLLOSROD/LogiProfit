@@ -42,7 +42,12 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { usuario, isAuthenticated } = useAuthStore()
+  const { usuario, isAuthenticated, checkAuth } = useAuthStore()
+
+  // Verificar sesión al cargar la app
+  useEffect(() => {
+    checkAuth()
+  }, [checkAuth])
 
   // Conectar WebSocket cuando el usuario esté autenticado
   useEffect(() => {
