@@ -62,6 +62,7 @@ async function bootstrap() {
     .addTag('cotizaciones', 'Gestión de cotizaciones')
     .addTag('fletes', 'Gestión de fletes')
     .addTag('gastos', 'Gestión de gastos')
+    .addTag('viaticos', 'Gestión de viáticos')
     .addTag('reportes', 'Reportes y dashboards')
     .build();
 
@@ -73,6 +74,7 @@ async function bootstrap() {
 
   console.log(`🚛 LogiProfit API running on: http://localhost:${port}`);
   console.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
+  console.log(`✅ ViaticosModule loaded and ready`);
 }
 
 bootstrap();
