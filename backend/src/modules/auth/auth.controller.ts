@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { ROLE_PERMISSIONS, getRolePermissions } from '../../common/rbac/permissions.config';
 
 
 @ApiTags('auth')
@@ -49,6 +50,30 @@ export class AuthController {
         id: req.user.empresa.id,
         nombre: req.user.empresa.nombre,
       },
+    };
+  }
+
+  @Get('permissions-debug')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'DEBUG: Ver permisos cargados en el backend' })
+  @ApiResponse({ status: 200, description: 'Permisos del rol actual' })
+  async debugPermissions(@Request() req: any) {
+    const userRole = req.user.rol;
+    const rolePermissions = getRolePermissions(userRole);
+    const allRoles = Object.keys(ROLE_PERMISSIONS);
+
+    return {
+      currentUser: {
+        id: req.user.id,
+        nombre: req.user.nombre,
+        rol: userRole,
+      },
+      rolesAvailable: allRoles,
+      permissionsForCurrentRole: rolePermissions,
+      totalPermissionsCount: rolePermissions.length,
+      hasViaticosLeer: rolePermissions.includes('viaticos:leer' as any),
+      allAdminPermissions: ROLE_PERMISSIONS['ADMIN'],
     };
   }
 }
