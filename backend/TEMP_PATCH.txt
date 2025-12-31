@@ -1,0 +1,45 @@
+Cambio necesario en fletes.service.ts línea 74-86:
+
+ANTES:
+      include: {
+        cliente: true,
+        cotizacion: {
+          include: {
+            conceptos: true,
+          }
+        },
+        camiones: { include: { camion: true } },
+        choferes: { include: { chofer: true } },
+        gastos: {
+          orderBy: { fecha: 'desc' },
+        },
+      },
+
+DESPUÉS:
+      include: {
+        cliente: true,
+        cotizacion: {
+          include: {
+            conceptos: true,
+          }
+        },
+        camiones: { include: { camion: true } },
+        choferes: { include: { chofer: true } },
+        gastos: {
+          orderBy: { fecha: 'desc' },
+        },
+        solicitudesCombustible: {
+          include: {
+            operador: {
+              select: {
+                id: true,
+                nombre: true,
+              },
+            },
+            paradas: {
+              orderBy: { orden: 'asc' },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },

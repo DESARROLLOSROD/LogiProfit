@@ -13,6 +13,25 @@ import api from '../../lib/api'
 import FleteChecklist from '../../components/FleteChecklist'
 import FacturacionFlete from '../../components/FacturacionFlete'
 
+interface SolicitudCombustible {
+  id: number
+  estado: string
+  montoTotal: number
+  notas?: string
+  motivoRechazo?: string
+  createdAt: string
+  operador: {
+    nombre: string
+  }
+  paradas: Array<{
+    id: number
+    lugar: string
+    litros: number
+    precioLitro: number
+    total: number
+  }>
+}
+
 interface Flete {
   id: number
   folio: string
@@ -55,6 +74,7 @@ interface Flete {
     fecha: string
     validado: boolean
   }>
+  solicitudesCombustible?: SolicitudCombustible[]
   resumen: {
     precioCliente: number
     totalGastos: number
@@ -84,6 +104,7 @@ export default function FleteDetalle() {
   const navigate = useNavigate()
   const [flete, setFlete] = useState<Flete | null>(null)
   const [loading, setLoading] = useState(true)
+  const [solicitudesCombustible, setSolicitudesCombustible] = useState<SolicitudCombustible[]>([])
 
   // Modales
   const [showGastoModal, setShowGastoModal] = useState(false)
@@ -110,7 +131,17 @@ export default function FleteDetalle() {
 
   useEffect(() => {
     fetchFlete()
+    fetchSolicitudesCombustible()
   }, [id])
+
+  const fetchSolicitudesCombustible = async () => {
+    try {
+      const response = await api.get(`/solicitudes-combustible?fleteId=${id}`)
+      setSolicitudesCombustible(response.data.filter((s: SolicitudCombustible) => s.id))
+    } catch (error) {
+      console.error('Error al cargar solicitudes:', error)
+    }
+  }
 
   const fetchFlete = async () => {
     try {
@@ -356,6 +387,8 @@ export default function FleteDetalle() {
     (c) => c.id === Number(choferForm.choferId)
   )
 
+  const solicitudesPendientes = solicitudesCombustible.filter((s) => s.estado === 'PENDIENTE').length
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -363,6 +396,11 @@ export default function FleteDetalle() {
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-900">{flete.folio}</h1>
             {getPaymentStatusBadge(flete.estadoPago)}
+            {solicitudesPendientes > 0 && (
+              <span className="px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800 flex items-center gap-1">
+                ⛽ {solicitudesPendientes} sol. pendiente{solicitudesPendientes > 1 ? 's' : ''}
+              </span>
+            )}
           </div>
           <p className="text-gray-500">{flete.cliente.nombre}</p>
         </div>
@@ -408,7 +446,7 @@ export default function FleteDetalle() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-5 gap-4 mb-6">
         <div className="stat-card">
           <p className="text-sm text-gray-500">Precio Cliente</p>
           <p className="text-xl font-bold">{formatMoney(flete.resumen.precioCliente)}</p>
@@ -418,6 +456,21 @@ export default function FleteDetalle() {
           <p className="text-xl font-bold text-red-600">
             {formatMoney(flete.resumen.totalGastos)}
           </p>
+        </div>
+        <div className="stat-card">
+          <p className="text-sm text-gray-500">Combustible</p>
+          <p className="text-xl font-bold text-orange-600">
+            {formatMoney(
+              solicitudesCombustible
+                .filter((s) => s.estado === 'DEPOSITADA')
+                .reduce((sum, s) => sum + s.montoTotal, 0)
+            )}
+          </p>
+          {solicitudesPendientes > 0 && (
+            <p className="text-xs text-orange-500 mt-1">
+              {solicitudesPendientes} pendiente{solicitudesPendientes > 1 ? 's' : ''}
+            </p>
+          )}
         </div>
         <div className="stat-card">
           <p className="text-sm text-gray-500">Utilidad</p>
@@ -553,6 +606,162 @@ export default function FleteDetalle() {
       {/* Checklist */}
       <div className="mb-6">
         <FleteChecklist fleteId={flete.id} />
+      </div>
+
+      {/* Solicitudes de Combustible */}
+      <div className="card mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Solicitudes de Combustible</h3>
+          <button
+            onClick={() => navigate('/solicitudes-combustible')}
+            className="btn-sm btn-primary"
+          >
+            + Nueva Solicitud
+          </button>
+        </div>
+
+        {solicitudesCombustible.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-8">
+            No hay solicitudes de combustible para este flete
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {solicitudesCombustible.map((solicitud) => {
+              const totalPendiente = solicitud.estado === 'PENDIENTE' ? solicitud.montoTotal : 0
+              const totalAprobado = solicitud.estado === 'APROBADA' ? solicitud.montoTotal : 0
+              const totalDepositado = solicitud.estado === 'DEPOSITADA' ? solicitud.montoTotal : 0
+
+              return (
+                <div key={solicitud.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-gray-900">
+                          Solicitud #{solicitud.id}
+                        </span>
+                        <span
+                          className={`badge ${
+                            solicitud.estado === 'PENDIENTE'
+                              ? 'badge-warning'
+                              : solicitud.estado === 'APROBADA'
+                              ? 'badge-info'
+                              : solicitud.estado === 'DEPOSITADA'
+                              ? 'badge-success'
+                              : 'badge-danger'
+                          }`}
+                        >
+                          {solicitud.estado}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        Solicitado por: {solicitud.operador.nombre}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(solicitud.createdAt).toLocaleDateString('es-MX', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-primary-600">
+                        {formatMoney(solicitud.montoTotal)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Paradas */}
+                  <div className="border-t border-gray-100 pt-3 mt-3">
+                    <p className="text-xs font-medium text-gray-500 mb-2">
+                      {solicitud.paradas.length} parada{solicitud.paradas.length > 1 ? 's' : ''}:
+                    </p>
+                    <div className="space-y-1">
+                      {solicitud.paradas.map((parada) => (
+                        <div
+                          key={parada.id}
+                          className="text-xs text-gray-600 flex justify-between"
+                        >
+                          <span>{parada.lugar}</span>
+                          <span className="font-medium">
+                            {parada.litros}L × {formatMoney(parada.precioLitro)} ={' '}
+                            {formatMoney(parada.total)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {solicitud.motivoRechazo && (
+                    <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded">
+                      <p className="text-xs font-medium text-red-800">Motivo de rechazo:</p>
+                      <p className="text-xs text-red-700">{solicitud.motivoRechazo}</p>
+                    </div>
+                  )}
+
+                  {solicitud.notas && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      <span className="font-medium">Notas:</span> {solicitud.notas}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* Resumen de solicitudes */}
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 mb-1">Pendientes</p>
+                  <p className="text-sm font-bold text-yellow-600">
+                    {solicitudesCombustible.filter((s) => s.estado === 'PENDIENTE').length}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {formatMoney(
+                      solicitudesCombustible
+                        .filter((s) => s.estado === 'PENDIENTE')
+                        .reduce((sum, s) => sum + s.montoTotal, 0)
+                    )}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 mb-1">Aprobadas</p>
+                  <p className="text-sm font-bold text-blue-600">
+                    {solicitudesCombustible.filter((s) => s.estado === 'APROBADA').length}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {formatMoney(
+                      solicitudesCombustible
+                        .filter((s) => s.estado === 'APROBADA')
+                        .reduce((sum, s) => sum + s.montoTotal, 0)
+                    )}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 mb-1">Depositadas</p>
+                  <p className="text-sm font-bold text-green-600">
+                    {solicitudesCombustible.filter((s) => s.estado === 'DEPOSITADA').length}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {formatMoney(
+                      solicitudesCombustible
+                        .filter((s) => s.estado === 'DEPOSITADA')
+                        .reduce((sum, s) => sum + s.montoTotal, 0)
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 text-center border-t border-gray-200 pt-3">
+                <p className="text-sm text-gray-500 mb-1">Total Combustible</p>
+                <p className="text-2xl font-bold text-primary-600">
+                  {formatMoney(
+                    solicitudesCombustible.reduce((sum, s) => sum + s.montoTotal, 0)
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Facturación */}

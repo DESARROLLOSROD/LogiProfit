@@ -50,8 +50,13 @@ export class SolicitudesController {
   @RequirePermission(Modulo.SOLICITUDES_COMBUSTIBLE, Accion.LEER)
   @ApiOperation({ summary: 'Listar todas las solicitudes (admin/mantenimiento/contabilidad)' })
   @ApiQuery({ name: 'estado', required: false, enum: EstadoSolicitud })
-  findAll(@Request() req: any, @Query('estado') estado?: EstadoSolicitud) {
-    return this.solicitudesService.findAll(req.user.empresaId, estado);
+  @ApiQuery({ name: 'fleteId', required: false, type: Number })
+  findAll(
+    @Request() req: any,
+    @Query('estado') estado?: EstadoSolicitud,
+    @Query('fleteId') fleteId?: string,
+  ) {
+    return this.solicitudesService.findAll(req.user.empresaId, estado, fleteId ? parseInt(fleteId) : undefined);
   }
 
   @Get('mis-solicitudes')

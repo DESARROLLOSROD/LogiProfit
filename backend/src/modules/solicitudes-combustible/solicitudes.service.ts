@@ -78,13 +78,17 @@ export class SolicitudesService {
     return this.convertirDecimales(solicitud);
   }
 
-  async findAll(empresaId: number, estado?: EstadoSolicitud) {
+  async findAll(empresaId: number, estado?: EstadoSolicitud, fleteId?: number) {
     const where: any = {
       flete: { empresaId },
     };
 
     if (estado) {
       where.estado = estado;
+    }
+
+    if (fleteId) {
+      where.fleteId = fleteId;
     }
 
     const solicitudes = await this.prisma.solicitudCombustible.findMany({
