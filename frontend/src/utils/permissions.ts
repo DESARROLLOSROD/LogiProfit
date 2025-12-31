@@ -108,6 +108,15 @@ export const ROLE_PERMISSIONS: Record<string, Partial<Record<PermissionKey, bool
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.RECHAZAR}`]: true,
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.DEPOSITAR}`]: true,
 
+    [`${Modulo.VIATICOS}:${Accion.CREAR}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.LEER}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.EDITAR}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.ELIMINAR}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.APROBAR}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.DEPOSITAR}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.VALIDAR}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.CANCELAR}`]: true,
+
     [`${Modulo.DOCUMENTOS}:${Accion.CREAR}`]: true,
     [`${Modulo.DOCUMENTOS}:${Accion.LEER}`]: true,
     [`${Modulo.DOCUMENTOS}:${Accion.ACTUALIZAR}`]: true,
