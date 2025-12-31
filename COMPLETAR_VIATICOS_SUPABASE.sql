@@ -121,25 +121,32 @@ BEGIN
 END $$;
 
 -- Paso 7: Verificar que la tabla _prisma_migrations existe y registrar la migración
-INSERT INTO "_prisma_migrations" (
-    "id",
-    "checksum",
-    "finished_at",
-    "migration_name",
-    "logs",
-    "rolled_back_at",
-    "started_at",
-    "applied_steps_count"
-) VALUES (
-    gen_random_uuid()::text,
-    'viaticos_module_complete_v1',
-    NOW(),
-    '20251231_add_viaticos',
-    NULL,
-    NULL,
-    NOW(),
-    1
-) ON CONFLICT (migration_name) DO NOTHING;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM "_prisma_migrations" WHERE migration_name = '20251231_add_viaticos'
+    ) THEN
+        INSERT INTO "_prisma_migrations" (
+            "id",
+            "checksum",
+            "finished_at",
+            "migration_name",
+            "logs",
+            "rolled_back_at",
+            "started_at",
+            "applied_steps_count"
+        ) VALUES (
+            gen_random_uuid()::text,
+            'viaticos_module_complete_v1',
+            NOW(),
+            '20251231_add_viaticos',
+            NULL,
+            NULL,
+            NOW(),
+            1
+        );
+    END IF;
+END $$;
 
 -- =========================================
 -- VERIFICACIÓN
