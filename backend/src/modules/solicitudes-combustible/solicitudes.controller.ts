@@ -61,6 +61,13 @@ export class SolicitudesController {
     return this.solicitudesService.findMisSolicitudes(req.user.id, estado);
   }
 
+  @Get('fletes-disponibles')
+  @RequirePermission(Modulo.SOLICITUDES_COMBUSTIBLE, Accion.CREAR)
+  @ApiOperation({ summary: 'Obtener fletes disponibles para solicitudes de combustible' })
+  getFletesDisponibles(@Request() req: any) {
+    return this.solicitudesService.getFletesDisponibles(req.user.empresaId);
+  }
+
   @Get('estadisticas')
   @ApiOperation({ summary: 'Obtener estadísticas de solicitudes' })
   getEstadisticas(@Request() req: any) {

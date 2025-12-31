@@ -299,6 +299,34 @@ export class SolicitudesService {
     return solicitudes.map((s) => this.convertirDecimales(s));
   }
 
+  // Obtener fletes disponibles para solicitudes de combustible
+  async getFletesDisponibles(empresaId: number) {
+    return this.prisma.flete.findMany({
+      where: {
+        empresaId,
+        estado: {
+          in: ['EN_CURSO', 'COMPLETADO'],
+        },
+      },
+      select: {
+        id: true,
+        folio: true,
+        origen: true,
+        destino: true,
+        estado: true,
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
   // Estadísticas de solicitudes
   async getEstadisticas(empresaId: number) {
     const solicitudes = await this.prisma.solicitudCombustible.findMany({

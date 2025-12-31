@@ -32,7 +32,10 @@
       "Bash(npm run prisma:migrate:deploy:*)",
       "Bash(npm run prisma:generate:*)",
       "Bash(npx tsc:*)",
-      "Bash(node node_modules/.bin/nest build:*)"
+      "Bash(node node_modules/.bin/nest build:*)",
+      "Bash(node node_modules/.bin/prisma:*)",
+      "Bash(tasklist:*)",
+      "Bash(curl:*)"
     ]
   }
 }

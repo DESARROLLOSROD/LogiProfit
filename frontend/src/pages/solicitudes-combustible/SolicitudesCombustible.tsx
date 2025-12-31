@@ -109,12 +109,12 @@ export default function SolicitudesCombustible() {
     try {
       const [solicitudesRes, fletesRes, statsRes] = await Promise.all([
         api.get('/solicitudes-combustible'),
-        api.get('/fletes'),
+        api.get('/solicitudes-combustible/fletes-disponibles'),
         api.get('/solicitudes-combustible/estadisticas'),
       ])
 
       setSolicitudes(solicitudesRes.data)
-      setFletes(fletesRes.data.filter((f: any) => f.estado === 'EN_CURSO' || f.estado === 'COMPLETADO'))
+      setFletes(fletesRes.data)
       setStats(statsRes.data)
     } catch (error) {
       console.error('Error:', error)
