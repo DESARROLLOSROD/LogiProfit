@@ -41,7 +41,8 @@
       "Bash(del \"c:/Users/ADMIN_SISTEMAS/OneDrive - Desarrollos ROD/Documentos/Desarrollos/logiprofit/backend/src/common/rbac/TEMP_PATCH.txt\")",
       "Bash(node node_modules/prisma/build/index.js migrate deploy:*)",
       "Bash(timeout 30 node:*)",
-      "Bash(timeout 30 npx tsc:*)"
+      "Bash(timeout 30 npx tsc:*)",
+      "Bash(railway:*)"
     ]
   }
 }
