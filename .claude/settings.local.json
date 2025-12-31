@@ -42,7 +42,8 @@
       "Bash(node node_modules/prisma/build/index.js migrate deploy:*)",
       "Bash(timeout 30 node:*)",
       "Bash(timeout 30 npx tsc:*)",
-      "Bash(railway:*)"
+      "Bash(railway:*)",
+      "Bash(git fetch:*)"
     ]
   }
 }
