@@ -35,7 +35,8 @@
       "Bash(node node_modules/.bin/nest build:*)",
       "Bash(node node_modules/.bin/prisma:*)",
       "Bash(tasklist:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(del TEMP_PATCH.txt)"
     ]
   }
 }

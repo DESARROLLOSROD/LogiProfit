@@ -626,12 +626,7 @@ export default function FleteDetalle() {
           </p>
         ) : (
           <div className="space-y-3">
-            {solicitudesCombustible.map((solicitud) => {
-              const totalPendiente = solicitud.estado === 'PENDIENTE' ? solicitud.montoTotal : 0
-              const totalAprobado = solicitud.estado === 'APROBADA' ? solicitud.montoTotal : 0
-              const totalDepositado = solicitud.estado === 'DEPOSITADA' ? solicitud.montoTotal : 0
-
-              return (
+            {solicitudesCombustible.map((solicitud) => (
                 <div key={solicitud.id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
@@ -705,8 +700,7 @@ export default function FleteDetalle() {
                     </div>
                   )}
                 </div>
-              )
-            })}
+            ))}
 
             {/* Resumen de solicitudes */}
             <div className="border-t border-gray-200 pt-4 mt-4">
