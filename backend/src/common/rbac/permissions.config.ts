@@ -32,7 +32,7 @@ export enum Modulo {
 
 export enum Accion {
   CREAR = 'crear',
-  
+  LEER = 'leer',
   EDITAR = 'editar',
   ACTUALIZAR = 'actualizar',
   ELIMINAR = 'eliminar',
@@ -40,7 +40,7 @@ export enum Accion {
   APROBAR = 'aprobar',
   RECHAZAR = 'rechazar',
   DEPOSITAR = 'depositar',
-  
+  CANCELAR = 'cancelar',
   VALIDAR = 'validar',
   CONFIGURAR = 'configurar',
 }

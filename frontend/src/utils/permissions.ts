@@ -18,7 +18,7 @@ export enum Modulo {
   FACTURAS = 'facturas',
 
   // Special modules
-  
+  SOLICITUDES_COMBUSTIBLE = 'solicitudes_combustible',
   VIATICOS = 'viaticos',
   DOCUMENTOS = 'documentos',
   MANTENIMIENTO = 'mantenimiento',
@@ -32,7 +32,7 @@ export enum Modulo {
 
 export enum Accion {
   CREAR = 'crear',
-  
+  LEER = 'leer',
   EDITAR = 'editar',
   ACTUALIZAR = 'actualizar',
   ELIMINAR = 'eliminar',
@@ -40,7 +40,7 @@ export enum Accion {
   APROBAR = 'aprobar',
   RECHAZAR = 'rechazar',
   DEPOSITAR = 'depositar',
-  
+  CANCELAR = 'cancelar',
   VALIDAR = 'validar',
   CONFIGURAR = 'configurar',
 }

@@ -63,6 +63,7 @@ interface Solicitud {
   fleteId: number
   tipoGasto: string
   montoSolicitado: number
+  estado: string
 }
 
 export default function ComprobacionesViatico() {
@@ -504,9 +505,11 @@ export default function ComprobacionesViatico() {
         {totalPaginas > 1 && (
           <div className="card-footer">
             <Pagination
-              currentPage={paginaActual}
-              totalPages={totalPaginas}
-              onPageChange={setPaginaActual}
+              paginaActual={paginaActual}
+              totalPaginas={totalPaginas}
+              totalItems={comprobacionesFiltradas.length}
+              itemsPorPagina={itemsPorPagina}
+              onCambiarPagina={setPaginaActual}
             />
           </div>
         )}

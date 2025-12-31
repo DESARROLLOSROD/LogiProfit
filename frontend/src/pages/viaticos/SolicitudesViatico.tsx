@@ -554,9 +554,11 @@ export default function SolicitudesViatico() {
         {totalPaginas > 1 && (
           <div className="card-footer">
             <Pagination
-              currentPage={paginaActual}
-              totalPages={totalPaginas}
-              onPageChange={setPaginaActual}
+              paginaActual={paginaActual}
+              totalPaginas={totalPaginas}
+              totalItems={solicitudesFiltradas.length}
+              itemsPorPagina={itemsPorPagina}
+              onCambiarPagina={setPaginaActual}
             />
           </div>
         )}

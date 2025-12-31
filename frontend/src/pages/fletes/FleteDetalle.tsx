@@ -48,7 +48,6 @@ interface SolicitudViatico {
   }
   detalle: any
 }
-}
 
 interface Flete {
   id: number
@@ -122,7 +121,8 @@ export default function FleteDetalle() {
   const navigate = useNavigate()
   const [flete, setFlete] = useState<Flete | null>(null)
   const [loading, setLoading] = useState(true)
-  
+
+  const [solicitudesCombustible, setSolicitudesCombustible] = useState<SolicitudCombustible[]>([])
   const [solicitudesViatico, setSolicitudesViatico] = useState<SolicitudViatico[]>([])
 
   // Modales
@@ -150,15 +150,23 @@ export default function FleteDetalle() {
 
   useEffect(() => {
     fetchFlete()
-    
+    fetchSolicitudesCombustible()
     fetchSolicitudesViatico()
   }, [id])
 
-  
+  const fetchSolicitudesCombustible = async () => {
+    try {
+      const response = await api.get(`/solicitudes-combustible?fleteId=${id}`)
+      setSolicitudesCombustible(response.data)
+    } catch (error) {
+      console.error('Error al cargar solicitudes de combustible:', error)
+    }
+  }
+
   const fetchSolicitudesViatico = async () => {
     try {
-      const response = await api.get()
-      setSolicitudesViatico(response.data.filter((s: SolicitudViatico) => s.id))
+      const response = await api.get(`/viaticos/solicitudes?fleteId=${id}`)
+      setSolicitudesViatico(response.data)
     } catch (error) {
       console.error('Error al cargar solicitudes de viáticos:', error)
     }
@@ -409,8 +417,13 @@ export default function FleteDetalle() {
     (c) => c.id === Number(choferForm.choferId)
   )
 
-  
-  const viaticosPendientes = solicitudesViatico.filter((s) => s.estado === 'SOLICITADO').length
+  const solicitudesPendientes = solicitudesCombustible.filter(
+    (s) => s.estado === 'SOLICITADA' || s.estado === 'APROBADA'
+  ).length
+
+  const viaticosPendientes = solicitudesViatico.filter(
+    (s) => s.estado === 'SOLICITADO' || s.estado === 'APROBADO'
+  ).length
 
   return (
     <div>
