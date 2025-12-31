@@ -128,24 +128,6 @@ export class ViaticosService {
             email: true,
           },
         },
-        aprobador: {
-          select: {
-            id: true,
-            nombre: true,
-          },
-        },
-        depositador: {
-          select: {
-            id: true,
-            nombre: true,
-          },
-        },
-        cancelador: {
-          select: {
-            id: true,
-            nombre: true,
-          },
-        },
       },
     });
 
@@ -240,12 +222,6 @@ export class ViaticosService {
             email: true,
           },
         },
-        aprobador: {
-          select: {
-            id: true,
-            nombre: true,
-          },
-        },
       },
     });
 
@@ -285,12 +261,6 @@ export class ViaticosService {
             id: true,
             nombre: true,
             email: true,
-          },
-        },
-        depositador: {
-          select: {
-            id: true,
-            nombre: true,
           },
         },
       },
@@ -333,12 +303,6 @@ export class ViaticosService {
             id: true,
             nombre: true,
             email: true,
-          },
-        },
-        cancelador: {
-          select: {
-            id: true,
-            nombre: true,
           },
         },
       },
@@ -430,7 +394,7 @@ export class ViaticosService {
         solicitudId: dto.solicitudId,
         fleteId: dto.fleteId,
         operadorId,
-        archivos: dto.archivos,
+        archivos: dto.archivos as any,
         notas: dto.notas,
       },
       include: {

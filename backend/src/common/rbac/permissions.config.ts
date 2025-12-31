@@ -18,7 +18,7 @@ export enum Modulo {
   FACTURAS = 'facturas',
 
   // Special modules
-  
+  SOLICITUDES_COMBUSTIBLE = 'solicitudes_combustible',
   VIATICOS = 'viaticos',
   DOCUMENTOS = 'documentos',
   MANTENIMIENTO = 'mantenimiento',
