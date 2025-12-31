@@ -18,7 +18,8 @@ export enum Modulo {
   FACTURAS = 'facturas',
 
   // Special modules
-  SOLICITUDES_COMBUSTIBLE = 'solicitudes_combustible',
+  
+  VIATICOS = 'viaticos',
   DOCUMENTOS = 'documentos',
   MANTENIMIENTO = 'mantenimiento',
   PLANTILLAS_GASTO = 'plantillas_gasto',
@@ -31,14 +32,16 @@ export enum Modulo {
 
 export enum Accion {
   CREAR = 'crear',
-  LEER = 'leer',
+  
+  EDITAR = 'editar',
   ACTUALIZAR = 'actualizar',
   ELIMINAR = 'eliminar',
   EXPORTAR = 'exportar',
   APROBAR = 'aprobar',
   RECHAZAR = 'rechazar',
   DEPOSITAR = 'depositar',
-  CANCELAR = 'cancelar',
+  
+  VALIDAR = 'validar',
   CONFIGURAR = 'configurar',
 }
 
@@ -165,6 +168,13 @@ export const ROLE_PERMISSIONS: Record<string, Partial<Record<PermissionKey, bool
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.APROBAR}`]: true,
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.RECHAZAR}`]: true,
 
+    [`${Modulo.VIATICOS}:${Accion.CREAR}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.LEER}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.EDITAR}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.ELIMINAR}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.APROBAR}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.VALIDAR}`]: true,
+
     [`${Modulo.DOCUMENTOS}:${Accion.CREAR}`]: true,
     [`${Modulo.DOCUMENTOS}:${Accion.LEER}`]: true,
     [`${Modulo.DOCUMENTOS}:${Accion.ACTUALIZAR}`]: true,
@@ -186,7 +196,12 @@ export const ROLE_PERMISSIONS: Record<string, Partial<Record<PermissionKey, bool
     [`${Modulo.GASTOS}:${Accion.LEER}`]: true,  // Only their own expenses
 
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.CREAR}`]: true,
-    [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.LEER}`]: true, // Only their own
+    [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.LEER}`]: true,
+
+    [`${Modulo.VIATICOS}:${Accion.CREAR}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.LEER}`]: true, // Only their own
+    [`${Modulo.VIATICOS}:${Accion.EDITAR}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.ELIMINAR}`]: true, // Only their own
 
     [`${Modulo.DOCUMENTOS}:${Accion.LEER}`]: true, // Only related to their fletes
 
@@ -214,6 +229,10 @@ export const ROLE_PERMISSIONS: Record<string, Partial<Record<PermissionKey, bool
 
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.LEER}`]: true,
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.DEPOSITAR}`]: true,
+
+    [`${Modulo.VIATICOS}:${Accion.LEER}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.DEPOSITAR}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.VALIDAR}`]: true,
 
     [`${Modulo.DOCUMENTOS}:${Accion.LEER}`]: true,
 
@@ -248,6 +267,10 @@ export const ROLE_PERMISSIONS: Record<string, Partial<Record<PermissionKey, bool
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.LEER}`]: true,
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.APROBAR}`]: true,
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.RECHAZAR}`]: true,
+
+    [`${Modulo.VIATICOS}:${Accion.LEER}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.APROBAR}`]: true,
+    [`${Modulo.VIATICOS}:${Accion.CANCELAR}`]: true,
 
     [`${Modulo.DOCUMENTOS}:${Accion.LEER}`]: true,
 

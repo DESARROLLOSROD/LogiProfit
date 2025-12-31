@@ -21,7 +21,8 @@ import { SearchModule } from './modules/search/search.module';
 import { PlantillasGastoModule } from './modules/plantillas-gasto/plantillas-gasto.module';
 import { DocumentosModule } from './modules/documentos/documentos.module';
 import { FacturasModule } from './modules/facturas/facturas.module';
-import { SolicitudesModule } from './modules/solicitudes-combustible/solicitudes.module';
+
+import { ViaticosModule } from './modules/viaticos/viaticos.module';
 
 @Module({
   imports: [
@@ -53,7 +54,8 @@ import { SolicitudesModule } from './modules/solicitudes-combustible/solicitudes
     SearchModule,
     DocumentosModule,
     FacturasModule,
-    SolicitudesModule,
+    
+    ViaticosModule,
   ],
   providers: [
     {

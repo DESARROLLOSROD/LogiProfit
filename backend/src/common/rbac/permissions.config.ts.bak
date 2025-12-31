@@ -1,6 +1,6 @@
 /**
- * Frontend RBAC Permission Utilities
- * Mirrors backend permission system
+ * RBAC Permission Matrix
+ * Defines what actions each role can perform on each module
  */
 
 export enum Modulo {
@@ -18,8 +18,7 @@ export enum Modulo {
   FACTURAS = 'facturas',
 
   // Special modules
-  
-  VIATICOS = 'viaticos',
+  SOLICITUDES_COMBUSTIBLE = 'solicitudes_combustible',
   DOCUMENTOS = 'documentos',
   MANTENIMIENTO = 'mantenimiento',
   PLANTILLAS_GASTO = 'plantillas_gasto',
@@ -32,16 +31,14 @@ export enum Modulo {
 
 export enum Accion {
   CREAR = 'crear',
-  
-  EDITAR = 'editar',
+  LEER = 'leer',
   ACTUALIZAR = 'actualizar',
   ELIMINAR = 'eliminar',
   EXPORTAR = 'exportar',
   APROBAR = 'aprobar',
   RECHAZAR = 'rechazar',
   DEPOSITAR = 'depositar',
-  
-  VALIDAR = 'validar',
+  CANCELAR = 'cancelar',
   CONFIGURAR = 'configurar',
 }
 
@@ -49,7 +46,7 @@ export type PermissionKey = `${Modulo}:${Accion}`;
 
 /**
  * Permission Matrix by Role
- * Must match backend permissions.config.ts
+ * TRUE = allowed, FALSE or undefined = denied
  */
 export const ROLE_PERMISSIONS: Record<string, Partial<Record<PermissionKey, boolean>>> = {
   ADMIN: {
@@ -136,7 +133,7 @@ export const ROLE_PERMISSIONS: Record<string, Partial<Record<PermissionKey, bool
   },
 
   OPERADOR: {
-    // Operations management
+    // Operations management - can handle day-to-day operations
     [`${Modulo.CLIENTES}:${Accion.LEER}`]: true,
     [`${Modulo.CLIENTES}:${Accion.CREAR}`]: true,
     [`${Modulo.CLIENTES}:${Accion.ACTUALIZAR}`]: true,
@@ -168,13 +165,6 @@ export const ROLE_PERMISSIONS: Record<string, Partial<Record<PermissionKey, bool
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.APROBAR}`]: true,
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.RECHAZAR}`]: true,
 
-    [`${Modulo.VIATICOS}:${Accion.CREAR}`]: true,
-    [`${Modulo.VIATICOS}:${Accion.LEER}`]: true,
-    [`${Modulo.VIATICOS}:${Accion.EDITAR}`]: true,
-    [`${Modulo.VIATICOS}:${Accion.ELIMINAR}`]: true,
-    [`${Modulo.VIATICOS}:${Accion.APROBAR}`]: true,
-    [`${Modulo.VIATICOS}:${Accion.VALIDAR}`]: true,
-
     [`${Modulo.DOCUMENTOS}:${Accion.CREAR}`]: true,
     [`${Modulo.DOCUMENTOS}:${Accion.LEER}`]: true,
     [`${Modulo.DOCUMENTOS}:${Accion.ACTUALIZAR}`]: true,
@@ -189,34 +179,29 @@ export const ROLE_PERMISSIONS: Record<string, Partial<Record<PermissionKey, bool
   },
 
   CHOFER: {
-    // Drivers - limited access
-    [`${Modulo.FLETES}:${Accion.LEER}`]: true,
+    // Drivers - limited to their own fletes and expenses
+    [`${Modulo.FLETES}:${Accion.LEER}`]: true, // Only their assigned fletes (filtered in service)
 
-    [`${Modulo.GASTOS}:${Accion.CREAR}`]: true,
-    [`${Modulo.GASTOS}:${Accion.LEER}`]: true,
+    [`${Modulo.GASTOS}:${Accion.CREAR}`]: true, // Can report expenses
+    [`${Modulo.GASTOS}:${Accion.LEER}`]: true,  // Only their own expenses
 
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.CREAR}`]: true,
-    [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.LEER}`]: true,
+    [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.LEER}`]: true, // Only their own
 
-    [`${Modulo.VIATICOS}:${Accion.CREAR}`]: true,
-    [`${Modulo.VIATICOS}:${Accion.LEER}`]: true,
-    [`${Modulo.VIATICOS}:${Accion.EDITAR}`]: true,
-    [`${Modulo.VIATICOS}:${Accion.ELIMINAR}`]: true,
+    [`${Modulo.DOCUMENTOS}:${Accion.LEER}`]: true, // Only related to their fletes
 
-    [`${Modulo.DOCUMENTOS}:${Accion.LEER}`]: true,
-
-    [`${Modulo.MANTENIMIENTO}:${Accion.LEER}`]: true,
+    [`${Modulo.MANTENIMIENTO}:${Accion.LEER}`]: true, // View maintenance of their trucks
   },
 
   CONTABILIDAD: {
-    // Accounting - financial operations
+    // Accounting - financial operations and reporting
     [`${Modulo.CLIENTES}:${Accion.LEER}`]: true,
 
     [`${Modulo.COTIZACIONES}:${Accion.LEER}`]: true,
     [`${Modulo.COTIZACIONES}:${Accion.EXPORTAR}`]: true,
 
     [`${Modulo.FLETES}:${Accion.LEER}`]: true,
-    [`${Modulo.FLETES}:${Accion.ACTUALIZAR}`]: true,
+    [`${Modulo.FLETES}:${Accion.ACTUALIZAR}`]: true, // Can update financial info
 
     [`${Modulo.GASTOS}:${Accion.LEER}`]: true,
     [`${Modulo.GASTOS}:${Accion.ACTUALIZAR}`]: true,
@@ -230,10 +215,6 @@ export const ROLE_PERMISSIONS: Record<string, Partial<Record<PermissionKey, bool
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.LEER}`]: true,
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.DEPOSITAR}`]: true,
 
-    [`${Modulo.VIATICOS}:${Accion.LEER}`]: true,
-    [`${Modulo.VIATICOS}:${Accion.DEPOSITAR}`]: true,
-    [`${Modulo.VIATICOS}:${Accion.VALIDAR}`]: true,
-
     [`${Modulo.DOCUMENTOS}:${Accion.LEER}`]: true,
 
     [`${Modulo.REPORTES}:${Accion.LEER}`]: true,
@@ -243,7 +224,7 @@ export const ROLE_PERMISSIONS: Record<string, Partial<Record<PermissionKey, bool
   },
 
   DIRECCION: {
-    // Management - strategic view
+    // Management - strategic view, approvals, high-level operations
     [`${Modulo.CLIENTES}:${Accion.LEER}`]: true,
 
     [`${Modulo.CAMIONES}:${Accion.LEER}`]: true,
@@ -251,7 +232,7 @@ export const ROLE_PERMISSIONS: Record<string, Partial<Record<PermissionKey, bool
     [`${Modulo.CHOFERES}:${Accion.LEER}`]: true,
 
     [`${Modulo.COTIZACIONES}:${Accion.LEER}`]: true,
-    [`${Modulo.COTIZACIONES}:${Accion.ACTUALIZAR}`]: true,
+    [`${Modulo.COTIZACIONES}:${Accion.ACTUALIZAR}`]: true, // Can approve/modify quotes
     [`${Modulo.COTIZACIONES}:${Accion.EXPORTAR}`]: true,
 
     [`${Modulo.FLETES}:${Accion.LEER}`]: true,
@@ -268,10 +249,6 @@ export const ROLE_PERMISSIONS: Record<string, Partial<Record<PermissionKey, bool
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.APROBAR}`]: true,
     [`${Modulo.SOLICITUDES_COMBUSTIBLE}:${Accion.RECHAZAR}`]: true,
 
-    [`${Modulo.VIATICOS}:${Accion.LEER}`]: true,
-    [`${Modulo.VIATICOS}:${Accion.APROBAR}`]: true,
-    [`${Modulo.VIATICOS}:${Accion.CANCELAR}`]: true,
-
     [`${Modulo.DOCUMENTOS}:${Accion.LEER}`]: true,
 
     [`${Modulo.MANTENIMIENTO}:${Accion.LEER}`]: true,
@@ -284,32 +261,17 @@ export const ROLE_PERMISSIONS: Record<string, Partial<Record<PermissionKey, bool
 };
 
 /**
- * Check if a role has a specific permission
+ * Helper function to check if a role has a specific permission
  */
-export function hasPermission(role: string | undefined, modulo: Modulo, accion: Accion): boolean {
-  if (!role) return false;
+export function hasPermission(role: string, modulo: Modulo, accion: Accion): boolean {
   const permissionKey: PermissionKey = `${modulo}:${accion}`;
   return ROLE_PERMISSIONS[role]?.[permissionKey] === true;
 }
 
 /**
- * Get all permissions for a role
+ * Helper function to get all permissions for a role
  */
 export function getRolePermissions(role: string): PermissionKey[] {
   const permissions = ROLE_PERMISSIONS[role] || {};
   return Object.keys(permissions).filter(key => permissions[key as PermissionKey]) as PermissionKey[];
-}
-
-/**
- * Check if user can perform multiple actions on a module (OR logic)
- */
-export function canPerformAny(role: string | undefined, modulo: Modulo, acciones: Accion[]): boolean {
-  return acciones.some(accion => hasPermission(role, modulo, accion));
-}
-
-/**
- * Check if user can perform all actions on a module (AND logic)
- */
-export function canPerformAll(role: string | undefined, modulo: Modulo, acciones: Accion[]): boolean {
-  return acciones.every(accion => hasPermission(role, modulo, accion));
 }

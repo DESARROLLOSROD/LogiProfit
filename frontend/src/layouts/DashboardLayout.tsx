@@ -19,7 +19,8 @@ import {
   ClockIcon,
   BanknotesIcon,
   DocumentDuplicateIcon,
-  BeakerIcon,
+  
+  ReceiptPercentIcon,
 } from '@heroicons/react/24/outline'
 
 const navigation = [
@@ -28,7 +29,8 @@ const navigation = [
   { name: 'Cotizaciones', href: '/cotizaciones', icon: DocumentTextIcon },
   { name: 'Fletes', href: '/fletes', icon: ClipboardDocumentListIcon },
   { name: 'Facturación', href: '/facturas', icon: BanknotesIcon },
-  { name: 'Combustible', href: '/solicitudes-combustible', icon: BeakerIcon },
+  
+  { name: 'Viáticos', href: '/viaticos/solicitudes', icon: ReceiptPercentIcon },
   { name: 'Documentos', href: '/documentos', icon: DocumentDuplicateIcon },
   { name: 'Camiones', href: '/camiones', icon: TruckIcon },
   { name: 'Choferes', href: '/choferes', icon: UserGroupIcon },

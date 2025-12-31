@@ -13,16 +13,22 @@ import api from '../../lib/api'
 import FleteChecklist from '../../components/FleteChecklist'
 import FacturacionFlete from '../../components/FacturacionFlete'
 
-interface SolicitudCombustible {
+
+interface SolicitudViatico {
   id: number
+  tipoGasto: string
+  periodoInicio: string
+  periodoFin: string
+  montoSolicitado: number
   estado: string
-  montoTotal: number
   notas?: string
-  motivoRechazo?: string
+  motivoCancelacion?: string
   createdAt: string
   operador: {
     nombre: string
   }
+  detalle: any
+}
   paradas: Array<{
     id: number
     lugar: string
@@ -104,7 +110,8 @@ export default function FleteDetalle() {
   const navigate = useNavigate()
   const [flete, setFlete] = useState<Flete | null>(null)
   const [loading, setLoading] = useState(true)
-  const [solicitudesCombustible, setSolicitudesCombustible] = useState<SolicitudCombustible[]>([])
+  
+  const [solicitudesViatico, setSolicitudesViatico] = useState<SolicitudViatico[]>([])
 
   // Modales
   const [showGastoModal, setShowGastoModal] = useState(false)
@@ -131,17 +138,20 @@ export default function FleteDetalle() {
 
   useEffect(() => {
     fetchFlete()
-    fetchSolicitudesCombustible()
+    
+    fetchSolicitudesViatico()
   }, [id])
 
-  const fetchSolicitudesCombustible = async () => {
+  
+  const fetchSolicitudesViatico = async () => {
     try {
-      const response = await api.get(`/solicitudes-combustible?fleteId=${id}`)
-      setSolicitudesCombustible(response.data.filter((s: SolicitudCombustible) => s.id))
+      const response = await api.get()
+      setSolicitudesViatico(response.data.filter((s: SolicitudViatico) => s.id))
     } catch (error) {
-      console.error('Error al cargar solicitudes:', error)
+      console.error('Error al cargar solicitudes de viáticos:', error)
     }
   }
+
 
   const fetchFlete = async () => {
     try {
@@ -387,7 +397,8 @@ export default function FleteDetalle() {
     (c) => c.id === Number(choferForm.choferId)
   )
 
-  const solicitudesPendientes = solicitudesCombustible.filter((s) => s.estado === 'PENDIENTE').length
+  
+  const viaticosPendientes = solicitudesViatico.filter((s) => s.estado === 'SOLICITADO').length
 
   return (
     <div>
@@ -396,9 +407,10 @@ export default function FleteDetalle() {
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-900">{flete.folio}</h1>
             {getPaymentStatusBadge(flete.estadoPago)}
-            {solicitudesPendientes > 0 && (
-              <span className="px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800 flex items-center gap-1">
-                ⛽ {solicitudesPendientes} sol. pendiente{solicitudesPendientes > 1 ? 's' : ''}
+            
+            {viaticosPendientes > 0 && (
+              <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 flex items-center gap-1">
+                💰 {viaticosPendientes} viático{viaticosPendientes > 1 ? 's' : ''} pendiente{viaticosPendientes > 1 ? 's' : ''}
               </span>
             )}
           </div>

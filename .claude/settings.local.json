@@ -36,7 +36,11 @@
       "Bash(node node_modules/.bin/prisma:*)",
       "Bash(tasklist:*)",
       "Bash(curl:*)",
-      "Bash(del TEMP_PATCH.txt)"
+      "Bash(del TEMP_PATCH.txt)",
+      "Bash(timeout 5 dir:*)",
+      "Bash(del \"c:/Users/ADMIN_SISTEMAS/OneDrive - Desarrollos ROD/Documentos/Desarrollos/logiprofit/backend/src/common/rbac/TEMP_PATCH.txt\")",
+      "Bash(node node_modules/prisma/build/index.js migrate deploy:*)",
+      "Bash(timeout 30 node:*)"
     ]
   }
 }

@@ -33,7 +33,9 @@ import CompararArchivo from './pages/integraciones/CompararArchivo'
 import EditarCotizacion from './pages/cotizaciones/EditarCotizacion'
 import Facturas from './pages/facturas/Facturas'
 import Documentos from './pages/documentos/Documentos'
-import SolicitudesCombustible from './pages/solicitudes-combustible/SolicitudesCombustible'
+
+import SolicitudesViatico from './pages/viaticos/SolicitudesViatico'
+import ComprobacionesViatico from './pages/viaticos/ComprobacionesViatico'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
@@ -132,7 +134,11 @@ export default function App() {
         <Route path="/documentos" element={<Documentos />} />
 
         {/* Solicitudes de Combustible */}
-        <Route path="/solicitudes-combustible" element={<SolicitudesCombustible />} />
+        
+
+        {/* Viáticos */}
+        <Route path="/viaticos/solicitudes" element={<SolicitudesViatico />} />
+        <Route path="/viaticos/comprobaciones" element={<ComprobacionesViatico />} />
 
         {/* Configuración */}
         <Route path="/configuracion" element={<Configuracion />} />
