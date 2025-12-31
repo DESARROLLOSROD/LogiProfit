@@ -74,6 +74,7 @@ export class SolicitudesController {
   }
 
   @Get('estadisticas')
+  @RequirePermission(Modulo.SOLICITUDES_COMBUSTIBLE, Accion.LEER)
   @ApiOperation({ summary: 'Obtener estadísticas de solicitudes' })
   getEstadisticas(@Request() req: any) {
     return this.solicitudesService.getEstadisticas(req.user.empresaId);
