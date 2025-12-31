@@ -14,6 +14,25 @@ import FleteChecklist from '../../components/FleteChecklist'
 import FacturacionFlete from '../../components/FacturacionFlete'
 
 
+interface SolicitudCombustible {
+  id: number
+  estado: string
+  montoTotal: number
+  notas?: string
+  motivoRechazo?: string
+  createdAt: string
+  operador: {
+    nombre: string
+  }
+  paradas: Array<{
+    id: number
+    lugar: string
+    litros: number
+    precioLitro: number
+    total: number
+  }>
+}
+
 interface SolicitudViatico {
   id: number
   tipoGasto: string
@@ -29,13 +48,6 @@ interface SolicitudViatico {
   }
   detalle: any
 }
-  paradas: Array<{
-    id: number
-    lugar: string
-    litros: number
-    precioLitro: number
-    total: number
-  }>
 }
 
 interface Flete {
