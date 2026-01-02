@@ -569,22 +569,27 @@ export default function SolicitudesViatico() {
 
       {/* Modal Formulario Nueva Solicitud */}
       {mostrarFormulario && (
-        <div className="modal-overlay">
-          <div className="modal-content max-w-4xl">
-            <div className="modal-header bg-gradient-to-r from-blue-600 to-blue-700">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <BanknotesIcon className="h-6 w-6 text-white" />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <BanknotesIcon className="h-6 w-6 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">Nueva Solicitud de Viáticos</h2>
                 </div>
-                <h2 className="modal-title text-white">Nueva Solicitud de Viáticos</h2>
+                <button
+                  onClick={() => setMostrarFormulario(false)}
+                  className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
               </div>
-              <button onClick={() => setMostrarFormulario(false)} className="modal-close text-white hover:bg-white/20">
-                <XMarkIcon className="h-6 w-6" />
-              </button>
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div className="modal-body space-y-6">
+              <div className="p-6 space-y-6">
                 {/* Sección: Información General */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
@@ -755,7 +760,7 @@ export default function SolicitudesViatico() {
                 </div>
               </div>
 
-              <div className="modal-footer bg-gray-50">
+              <div className="flex items-center justify-end gap-3 p-6 bg-gray-50 border-t rounded-b-lg">
                 <button
                   type="button"
                   onClick={() => setMostrarFormulario(false)}
@@ -788,22 +793,17 @@ export default function SolicitudesViatico() {
 
       {/* Modal Aprobar */}
       {mostrarModalAprobar && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Aprobar Solicitud</h2>
-              <button onClick={() => setMostrarModalAprobar(false)} className="modal-close">
-                <XMarkIcon className="h-6 w-6" />
-              </button>
-            </div>
-            <div className="modal-body">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Aprobar Solicitud</h3>
               <p className="text-gray-600 mb-4">
                 ¿Está seguro de aprobar esta solicitud de viáticos?
               </p>
               <div>
                 <label className="label">Notas (opcional)</label>
                 <textarea
-                  className="textarea"
+                  className="input"
                   rows={3}
                   value={notasAccion}
                   onChange={(e) => setNotasAccion(e.target.value)}
@@ -811,7 +811,7 @@ export default function SolicitudesViatico() {
                 />
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="flex items-center justify-end gap-3 p-6 bg-gray-50 border-t">
               <button
                 onClick={() => setMostrarModalAprobar(false)}
                 className="btn btn-secondary"
@@ -828,22 +828,17 @@ export default function SolicitudesViatico() {
 
       {/* Modal Depositar */}
       {mostrarModalDepositar && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Marcar como Depositado</h2>
-              <button onClick={() => setMostrarModalDepositar(false)} className="modal-close">
-                <XMarkIcon className="h-6 w-6" />
-              </button>
-            </div>
-            <div className="modal-body">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Marcar como Depositado</h3>
               <p className="text-gray-600 mb-4">
                 ¿Confirma que el depósito fue realizado?
               </p>
               <div>
                 <label className="label">Notas (opcional)</label>
                 <textarea
-                  className="textarea"
+                  className="input"
                   rows={3}
                   value={notasAccion}
                   onChange={(e) => setNotasAccion(e.target.value)}
@@ -851,7 +846,7 @@ export default function SolicitudesViatico() {
                 />
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="flex items-center justify-end gap-3 p-6 bg-gray-50 border-t">
               <button
                 onClick={() => setMostrarModalDepositar(false)}
                 className="btn btn-secondary"
@@ -868,20 +863,15 @@ export default function SolicitudesViatico() {
 
       {/* Modal Cancelar */}
       {mostrarModalCancelar && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Cancelar Solicitud</h2>
-              <button onClick={() => setMostrarModalCancelar(false)} className="modal-close">
-                <XMarkIcon className="h-6 w-6" />
-              </button>
-            </div>
-            <div className="modal-body">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Cancelar Solicitud</h3>
               <p className="text-gray-600 mb-4">
                 Indique el motivo de la cancelación:
               </p>
               <textarea
-                className="textarea"
+                className="input"
                 rows={3}
                 value={motivoCancelacion}
                 onChange={(e) => setMotivoCancelacion(e.target.value)}
@@ -889,7 +879,7 @@ export default function SolicitudesViatico() {
                 required
               />
             </div>
-            <div className="modal-footer">
+            <div className="flex items-center justify-end gap-3 p-6 bg-gray-50 border-t">
               <button
                 onClick={() => setMostrarModalCancelar(false)}
                 className="btn btn-secondary"
