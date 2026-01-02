@@ -412,28 +412,31 @@ model PlantillaGasto {
 }
 
 model Gasto {
-  id             Int              @id @default(autoincrement())
-  fleteId        Int
-  camionId       Int?
-  categoriaId    Int?
-  tipo           TipoGasto
-  concepto       String?
-  monto          Decimal          @db.Decimal(12, 2)
-  fecha          DateTime
-  comprobanteUrl String?
-  validado       Boolean          @default(false)
-  validadoPor    Int?
-  validadoAt     DateTime?
-  notas          String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id                 Int              @id @default(autoincrement())
+  fleteId            Int
+  camionId           Int?
+  categoriaId        Int?
+  solicitudViaticoId Int?             // Vínculo opcional con solicitud de viático
+  tipo               TipoGasto
+  concepto           String?
+  monto              Decimal          @db.Decimal(12, 2)
+  fecha              DateTime
+  comprobanteUrl     String?
+  validado           Boolean          @default(false)
+  validadoPor        Int?
+  validadoAt         DateTime?
+  notas              String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
-  flete     Flete            @relation(fields: [fleteId], references: [id], onDelete: Cascade)
-  camion    Camion?          @relation(fields: [camionId], references: [id])
-  categoria CategoriaGasto?  @relation(fields: [categoriaId], references: [id])
+  flete            Flete             @relation(fields: [fleteId], references: [id], onDelete: Cascade)
+  camion           Camion?           @relation(fields: [camionId], references: [id])
+  categoria        CategoriaGasto?   @relation(fields: [categoriaId], references: [id])
+  solicitudViatico SolicitudViatico? @relation(fields: [solicitudViaticoId], references: [id], onDelete: SetNull)
 
   @@index([fleteId])
   @@index([categoriaId])
+  @@index([solicitudViaticoId])
   @@index([fecha])
   @@map("gastos")
 }
@@ -751,32 +754,34 @@ enum TipoOperacion {
 // ==================== VIÁTICOS ====================
 
 model SolicitudViatico {
-  id                Int                      @id @default(autoincrement())
-  fleteId           Int
-  operadorId        Int
-  tipoGasto         TipoGastoViatico
-  periodoInicio     DateTime
-  periodoFin        DateTime
-  montoSolicitado   Decimal                  @db.Decimal(12, 2)
-  detalle           Json                     // Array de {concepto: string, importe: number}
-  estado            EstadoSolicitudViatico   @default(SOLICITADO)
-  pdfUrl            String?
-  enviadoAdmon      Boolean                  @default(false)
-  correoEnvioTs     DateTime?
-  aprobadoPor       Int?
-  aprobadoAt        DateTime?
-  depositadoPor     Int?
-  depositadoAt      DateTime?
-  canceladoPor      Int?
-  canceladoAt       DateTime?
-  motivoCancelacion String?
-  notas             String?
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
+  id                    Int                      @id @default(autoincrement())
+  fleteId               Int
+  operadorId            Int
+  tipoGasto             TipoGastoViatico
+  periodoInicio         DateTime
+  periodoFin            DateTime
+  montoSolicitado       Decimal                  @db.Decimal(12, 2)
+  detalle               Json                     // Array de {concepto: string, importe: number}
+  estado                EstadoSolicitudViatico   @default(SOLICITADO)
+  pdfUrl                String?
+  comprobanteDepositoUrl String?                 // Comprobante del depósito (foto o PDF)
+  enviadoAdmon          Boolean                  @default(false)
+  correoEnvioTs         DateTime?
+  aprobadoPor           Int?
+  aprobadoAt            DateTime?
+  depositadoPor         Int?
+  depositadoAt          DateTime?
+  canceladoPor          Int?
+  canceladoAt           DateTime?
+  motivoCancelacion     String?
+  notas                 String?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
 
-  flete             Flete                    @relation(fields: [fleteId], references: [id], onDelete: Cascade)
-  operador          Usuario                  @relation("SolicitudViaticoOperador", fields: [operadorId], references: [id])
-  comprobaciones    ComprobacionViatico[]
+  flete                 Flete                    @relation(fields: [fleteId], references: [id], onDelete: Cascade)
+  operador              Usuario                  @relation("SolicitudViaticoOperador", fields: [operadorId], references: [id])
+  comprobaciones        ComprobacionViatico[]
+  gastos                Gasto[]                  // Gastos vinculados a este viático
 
   @@index([fleteId])
   @@index([operadorId])

@@ -105,6 +105,11 @@ export class DepositarSolicitudViaticoDto {
   @IsString()
   @IsOptional()
   notas?: string;
+
+  @ApiPropertyOptional({ description: 'URL del comprobante de depósito (foto o PDF)' })
+  @IsString()
+  @IsOptional()
+  comprobanteDepositoUrl?: string;
 }
 
 export class CancelarSolicitudViaticoDto {

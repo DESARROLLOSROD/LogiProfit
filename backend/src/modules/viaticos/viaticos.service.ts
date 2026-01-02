@@ -249,6 +249,7 @@ export class ViaticosService {
         depositadoPor: depositadorId,
         depositadoAt: new Date(),
         notas: dto?.notas || solicitud.notas,
+        comprobanteDepositoUrl: dto?.comprobanteDepositoUrl || solicitud.comprobanteDepositoUrl,
       },
       include: {
         flete: {

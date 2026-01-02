@@ -36,6 +36,11 @@ export class CreateGastoDto {
   @IsOptional()
   comprobanteUrl?: string;
 
+  @ApiProperty({ required: false, description: 'ID de solicitud de viático vinculada' })
+  @IsNumber()
+  @IsOptional()
+  solicitudViaticoId?: number;
+
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
