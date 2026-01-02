@@ -267,11 +267,25 @@ export default function FleteDetalle() {
 
     const viatico = solicitudesViatico.find(v => v.id === Number(viaticoId))
     if (viatico) {
+      // Intentar construir un concepto descriptivo basado en el desglose
+      let conceptoDesc = `Viático ${viatico.tipoGasto} - ${viatico.operador?.nombre || 'Operador'}`
+
+      if (viatico.detalle) {
+        const breakdown = []
+        if (viatico.detalle.diesel > 0) breakdown.push(`Diesel: $${viatico.detalle.diesel}`)
+        if (viatico.detalle.comidas > 0) breakdown.push(`Comidas: $${viatico.detalle.comidas}`)
+        if (viatico.detalle.casetas > 0) breakdown.push(`Casetas: $${viatico.detalle.casetas}`)
+
+        if (breakdown.length > 0) {
+          conceptoDesc += ` (${breakdown.join(', ')})`
+        }
+      }
+
       setNuevoGasto({
         ...nuevoGasto,
         solicitudViaticoId: viatico.id,
         monto: viatico.montoSolicitado.toString(),
-        concepto: `Viático ${viatico.tipoGasto} - ${viatico.operador?.nombre || 'Operador'}`,
+        concepto: conceptoDesc,
         comprobanteUrl: viatico.comprobanteDepositoUrl || ''
       })
     }
@@ -472,7 +486,7 @@ export default function FleteDetalle() {
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-900">{flete.folio}</h1>
             {getPaymentStatusBadge(flete.estadoPago)}
-            
+
             {viaticosPendientes > 0 && (
               <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 flex items-center gap-1">
                 💰 {viaticosPendientes} viático{viaticosPendientes > 1 ? 's' : ''} pendiente{viaticosPendientes > 1 ? 's' : ''}
@@ -704,79 +718,78 @@ export default function FleteDetalle() {
         ) : (
           <div className="space-y-3">
             {solicitudesCombustible.map((solicitud) => (
-                <div key={solicitud.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-gray-900">
-                          Solicitud #{solicitud.id}
-                        </span>
-                        <span
-                          className={`badge ${
-                            solicitud.estado === 'PENDIENTE'
-                              ? 'badge-warning'
-                              : solicitud.estado === 'APROBADA'
+              <div key={solicitud.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-gray-900">
+                        Solicitud #{solicitud.id}
+                      </span>
+                      <span
+                        className={`badge ${solicitud.estado === 'PENDIENTE'
+                            ? 'badge-warning'
+                            : solicitud.estado === 'APROBADA'
                               ? 'badge-info'
                               : solicitud.estado === 'DEPOSITADA'
-                              ? 'badge-success'
-                              : 'badge-danger'
+                                ? 'badge-success'
+                                : 'badge-danger'
                           }`}
-                        >
-                          {solicitud.estado}
+                      >
+                        {solicitud.estado}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      Solicitado por: {solicitud.operador.nombre}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {new Date(solicitud.createdAt).toLocaleDateString('es-MX', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-bold text-primary-600">
+                      {formatMoney(solicitud.montoTotal)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Paradas */}
+                <div className="border-t border-gray-100 pt-3 mt-3">
+                  <p className="text-xs font-medium text-gray-500 mb-2">
+                    {solicitud.paradas.length} parada{solicitud.paradas.length > 1 ? 's' : ''}:
+                  </p>
+                  <div className="space-y-1">
+                    {solicitud.paradas.map((parada) => (
+                      <div
+                        key={parada.id}
+                        className="text-xs text-gray-600 flex justify-between"
+                      >
+                        <span>{parada.lugar}</span>
+                        <span className="font-medium">
+                          {parada.litros}L × {formatMoney(parada.precioLitro)} ={' '}
+                          {formatMoney(parada.total)}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-500">
-                        Solicitado por: {solicitud.operador.nombre}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(solicitud.createdAt).toLocaleDateString('es-MX', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-primary-600">
-                        {formatMoney(solicitud.montoTotal)}
-                      </p>
-                    </div>
+                    ))}
                   </div>
-
-                  {/* Paradas */}
-                  <div className="border-t border-gray-100 pt-3 mt-3">
-                    <p className="text-xs font-medium text-gray-500 mb-2">
-                      {solicitud.paradas.length} parada{solicitud.paradas.length > 1 ? 's' : ''}:
-                    </p>
-                    <div className="space-y-1">
-                      {solicitud.paradas.map((parada) => (
-                        <div
-                          key={parada.id}
-                          className="text-xs text-gray-600 flex justify-between"
-                        >
-                          <span>{parada.lugar}</span>
-                          <span className="font-medium">
-                            {parada.litros}L × {formatMoney(parada.precioLitro)} ={' '}
-                            {formatMoney(parada.total)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {solicitud.motivoRechazo && (
-                    <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded">
-                      <p className="text-xs font-medium text-red-800">Motivo de rechazo:</p>
-                      <p className="text-xs text-red-700">{solicitud.motivoRechazo}</p>
-                    </div>
-                  )}
-
-                  {solicitud.notas && (
-                    <div className="mt-2 text-xs text-gray-500">
-                      <span className="font-medium">Notas:</span> {solicitud.notas}
-                    </div>
-                  )}
                 </div>
+
+                {solicitud.motivoRechazo && (
+                  <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded">
+                    <p className="text-xs font-medium text-red-800">Motivo de rechazo:</p>
+                    <p className="text-xs text-red-700">{solicitud.motivoRechazo}</p>
+                  </div>
+                )}
+
+                {solicitud.notas && (
+                  <div className="mt-2 text-xs text-gray-500">
+                    <span className="font-medium">Notas:</span> {solicitud.notas}
+                  </div>
+                )}
+              </div>
             ))}
 
             {/* Resumen de solicitudes */}

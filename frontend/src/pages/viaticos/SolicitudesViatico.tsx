@@ -11,12 +11,14 @@ import {
   CalendarIcon,
   DocumentTextIcon,
   PaperClipIcon,
+  DocumentArrowDownIcon,
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import Pagination from '../../components/Pagination'
 import { usePermissions } from '../../hooks/usePermissions'
 import { Modulo, Accion } from '../../utils/permissions'
+import { generarPDFSolicitudViatico } from '../../lib/viaticosPdfGenerator'
 
 interface SolicitudViatico {
   id: number
@@ -95,7 +97,17 @@ export default function SolicitudesViatico() {
     periodoInicio: '',
     periodoFin: '',
     montoSolicitado: 0,
-    detalle: { conceptos: [{ concepto: '', monto: 0 }] },
+    // detalle: { conceptos: [{ concepto: '', monto: 0 }] }, // REMOVED: Old structure
+    detalle: {
+      comidas: '',
+      federales: '',
+      taxi: '',
+      casetas: '',
+      telefono: '',
+      pension: '',
+      regaderas: '',
+      diesel: '',
+    },
     notas: '',
   })
   const [guardando, setGuardando] = useState(false)
@@ -132,33 +144,24 @@ export default function SolicitudesViatico() {
     }
   }
 
-  const handleAgregarConcepto = () => {
+  /* REMOVED: Dynamic concept handlers
+  const handleAgregarConcepto = () => { ... }
+  const handleEliminarConcepto = (index: number) => { ... }
+  const handleConceptoChange = (index: number, field: string, value: any) => { ... }
+  */
+
+  const handleMontoChange = (field: string, value: string) => {
+    const nuevosDetalles = { ...formData.detalle, [field]: value }
+
+    // Calcular total
+    const total = Object.values(nuevosDetalles).reduce((sum: number, val: any) => {
+      return sum + (Number(val) || 0)
+    }, 0)
+
     setFormData({
       ...formData,
-      detalle: {
-        ...formData.detalle,
-        conceptos: [...formData.detalle.conceptos, { concepto: '', monto: 0 }],
-      },
-    })
-  }
-
-  const handleEliminarConcepto = (index: number) => {
-    if (formData.detalle.conceptos.length > 1) {
-      const nuevosConceptos = formData.detalle.conceptos.filter((_: any, i: number) => i !== index)
-      setFormData({
-        ...formData,
-        detalle: { ...formData.detalle, conceptos: nuevosConceptos },
-      })
-    }
-  }
-
-  const handleConceptoChange = (index: number, field: string, value: any) => {
-    const nuevosConceptos = [...formData.detalle.conceptos]
-    nuevosConceptos[index] = { ...nuevosConceptos[index], [field]: value }
-    setFormData({
-      ...formData,
-      detalle: { ...formData.detalle, conceptos: nuevosConceptos },
-      montoSolicitado: nuevosConceptos.reduce((sum: number, c: any) => sum + (Number(c.monto) || 0), 0),
+      detalle: nuevosDetalles,
+      montoSolicitado: total
     })
   }
 
@@ -211,7 +214,16 @@ export default function SolicitudesViatico() {
       periodoInicio: '',
       periodoFin: '',
       montoSolicitado: 0,
-      detalle: { conceptos: [{ concepto: '', monto: 0 }] },
+      detalle: {
+        comidas: '',
+        federales: '',
+        taxi: '',
+        casetas: '',
+        telefono: '',
+        pension: '',
+        regaderas: '',
+        diesel: '',
+      },
       notas: '',
     })
   }
@@ -506,6 +518,14 @@ export default function SolicitudesViatico() {
                     <td className="text-sm text-gray-500">{formatDate(solicitud.createdAt)}</td>
                     <td>
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => generarPDFSolicitudViatico(solicitud as any)}
+                          className="btn btn-sm btn-secondary"
+                          title="Descargar PDF"
+                        >
+                          <DocumentArrowDownIcon className="h-4 w-4" />
+                        </button>
+
                         {solicitud.estado === 'SOLICITADO' && can(Modulo.VIATICOS, Accion.APROBAR) && (
                           <button
                             onClick={() => {
@@ -683,58 +703,26 @@ export default function SolicitudesViatico() {
                   <div className="flex items-center justify-between pb-2 border-b border-gray-200">
                     <div className="flex items-center gap-2">
                       <DocumentTextIcon className="h-5 w-5 text-blue-600" />
-                      <h3 className="font-semibold text-gray-700">Conceptos y Desglose</h3>
+                      <h3 className="font-semibold text-gray-700">Desglose de Gastos</h3>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleAgregarConcepto}
-                      className="btn btn-sm btn-secondary flex items-center gap-1.5"
-                    >
-                      <PlusIcon className="h-4 w-4" />
-                      Agregar Concepto
-                    </button>
                   </div>
 
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                    {formData.detalle.conceptos.map((concepto: any, index: number) => (
-                      <div key={index} className="flex gap-3 items-start bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                        <div className="flex-1">
+                  <div className="bg-gray-50 rounded-lg p-4 grid grid-cols-2 gap-4">
+                    {Object.keys(formData.detalle).map((key) => (
+                      <div key={key}>
+                        <label className="label capitalize">{key}</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
                           <input
-                            type="text"
-                            placeholder="Descripción del concepto"
-                            className="input"
-                            value={concepto.concepto}
-                            onChange={(e) => handleConceptoChange(index, 'concepto', e.target.value)}
-                            required
+                            type="number"
+                            placeholder="0.00"
+                            className="input pl-7"
+                            min="0"
+                            step="0.01"
+                            value={(formData.detalle as any)[key]}
+                            onChange={(e) => handleMontoChange(key, e.target.value)}
                           />
                         </div>
-                        <div className="w-40">
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                            <input
-                              type="number"
-                              placeholder="0.00"
-                              className="input pl-7"
-                              step="0.01"
-                              min="0"
-                              value={concepto.monto}
-                              onChange={(e) =>
-                                handleConceptoChange(index, 'monto', Number(e.target.value))
-                              }
-                              required
-                            />
-                          </div>
-                        </div>
-                        {formData.detalle.conceptos.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleEliminarConcepto(index)}
-                            className="btn btn-sm btn-danger"
-                            title="Eliminar concepto"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        )}
                       </div>
                     ))}
                   </div>

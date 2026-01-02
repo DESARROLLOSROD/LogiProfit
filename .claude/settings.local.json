@@ -43,7 +43,8 @@
       "Bash(timeout 30 node:*)",
       "Bash(timeout 30 npx tsc:*)",
       "Bash(railway:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(npm run prisma:migrate:dev:*)"
     ]
   }
 }
