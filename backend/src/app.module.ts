@@ -21,6 +21,8 @@ import { SearchModule } from './modules/search/search.module';
 import { PlantillasGastoModule } from './modules/plantillas-gasto/plantillas-gasto.module';
 import { DocumentosModule } from './modules/documentos/documentos.module';
 import { FacturasModule } from './modules/facturas/facturas.module';
+import { SolicitudesModule } from './modules/solicitudes-combustible/solicitudes.module';
+import { CalculosModule } from './modules/calculos/calculos.module';
 
 import { ViaticosModule } from './modules/viaticos/viaticos.module';
 
@@ -53,8 +55,11 @@ import { ViaticosModule } from './modules/viaticos/viaticos.module';
     DashboardModule,
     SearchModule,
     DocumentosModule,
+    DocumentosModule,
     FacturasModule,
-    
+    SolicitudesModule,
+    CalculosModule,
+
     ViaticosModule,
   ],
   providers: [
@@ -64,4 +69,4 @@ import { ViaticosModule } from './modules/viaticos/viaticos.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

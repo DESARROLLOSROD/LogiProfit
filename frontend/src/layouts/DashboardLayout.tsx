@@ -19,8 +19,9 @@ import {
   ClockIcon,
   BanknotesIcon,
   DocumentDuplicateIcon,
-  
+
   ReceiptPercentIcon,
+  CalculatorIcon,
 } from '@heroicons/react/24/outline'
 
 const navigation = [
@@ -29,7 +30,8 @@ const navigation = [
   { name: 'Cotizaciones', href: '/cotizaciones', icon: DocumentTextIcon },
   { name: 'Fletes', href: '/fletes', icon: ClipboardDocumentListIcon },
   { name: 'Facturación', href: '/facturas', icon: BanknotesIcon },
-  
+  { name: 'Cálculos', href: '/calculos', icon: CalculatorIcon },
+
   { name: 'Viáticos', href: '/viaticos/solicitudes', icon: ReceiptPercentIcon },
   { name: 'Documentos', href: '/documentos', icon: DocumentDuplicateIcon },
   { name: 'Camiones', href: '/camiones', icon: TruckIcon },
@@ -63,9 +65,8 @@ export default function DashboardLayout() {
 
       {/* Mobile sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 lg:hidden ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 lg:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
@@ -138,10 +139,9 @@ function SidebarContent() {
           key={item.name}
           to={item.href}
           className={({ isActive }) =>
-            `flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              isActive
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-700 hover:bg-gray-100'
+            `flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
+              ? 'bg-primary-50 text-primary-700'
+              : 'text-gray-700 hover:bg-gray-100'
             }`
           }
         >
