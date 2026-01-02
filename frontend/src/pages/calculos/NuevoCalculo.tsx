@@ -168,7 +168,7 @@ export default function NuevoCalculo() {
                                 <label className="label">Cliente</label>
                                 <select className="input" value={state.clienteId} onChange={e => setState({ ...state, clienteId: Number(e.target.value) })}>
                                     <option value={0}>Seleccione...</option>
-                                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nombreComercial}</option>)}
+                                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                                 </select>
                             </div>
                             <div>

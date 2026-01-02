@@ -80,7 +80,7 @@ export default function CalculosList() {
                                             {calculo.folio}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                                            {calculo.cliente?.nombreComercial || 'Cliente General'}
+                                            {calculo.cliente?.nombre || 'Cliente General'}
                                         </td>
                                         <td className="px-6 py-4 text-gray-500">
                                             <div className="flex flex-col">
