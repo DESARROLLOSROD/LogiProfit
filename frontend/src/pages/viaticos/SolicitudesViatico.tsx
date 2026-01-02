@@ -10,6 +10,7 @@ import {
   TruckIcon,
   CalendarIcon,
   DocumentTextIcon,
+  PaperClipIcon,
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
@@ -106,6 +107,7 @@ export default function SolicitudesViatico() {
   const [mostrarModalDepositar, setMostrarModalDepositar] = useState(false)
   const [notasAccion, setNotasAccion] = useState('')
   const [motivoCancelacion, setMotivoCancelacion] = useState('')
+  const [archivoComprobante, setArchivoComprobante] = useState<File | null>(null)
 
   useEffect(() => {
     fetchData()
@@ -255,12 +257,21 @@ export default function SolicitudesViatico() {
     if (!solicitudSeleccionada) return
 
     try {
+      // Si hay archivo, generar URL simulada (en producción se subiría a storage)
+      let comprobanteUrl: string | undefined = undefined
+      if (archivoComprobante) {
+        comprobanteUrl = `https://storage.example.com/viaticos/${Date.now()}-${archivoComprobante.name}`
+        // TODO: Implementar subida real a Cloudinary/S3
+      }
+
       await api.patch(`/viaticos/solicitudes/${solicitudSeleccionada}/depositar`, {
         notas: notasAccion || undefined,
+        comprobanteDepositoUrl: comprobanteUrl,
       })
       toast.success('Solicitud marcada como depositada')
       setMostrarModalDepositar(false)
       setNotasAccion('')
+      setArchivoComprobante(null)
       setSolicitudSeleccionada(null)
       fetchData()
     } catch (error: any) {
@@ -830,11 +841,53 @@ export default function SolicitudesViatico() {
       {mostrarModalDepositar && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Marcar como Depositado</h3>
-              <p className="text-gray-600 mb-4">
+            <div className="p-6 space-y-4">
+              <h3 className="text-lg font-bold text-gray-900">Marcar como Depositado</h3>
+              <p className="text-gray-600">
                 ¿Confirma que el depósito fue realizado?
               </p>
+
+              <div>
+                <label className="label">Comprobante de Depósito (opcional)</label>
+                <div className="mt-1">
+                  <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:border-primary-500 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <PaperClipIcon className="h-5 w-5" />
+                      <span className="text-sm">
+                        {archivoComprobante ? archivoComprobante.name : 'Seleccionar foto o PDF'}
+                      </span>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          // Validar tamaño (máx 10MB)
+                          if (file.size > 10 * 1024 * 1024) {
+                            toast.error('El archivo no debe superar 10MB')
+                            return
+                          }
+                          setArchivoComprobante(file)
+                        }
+                      }}
+                    />
+                  </label>
+                  {archivoComprobante && (
+                    <button
+                      type="button"
+                      onClick={() => setArchivoComprobante(null)}
+                      className="mt-2 text-sm text-red-600 hover:text-red-700 flex items-center gap-1"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                      Eliminar archivo
+                    </button>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">PDF, JPG, JPEG o PNG (máx. 10MB)</p>
+                </div>
+              </div>
+
               <div>
                 <label className="label">Notas (opcional)</label>
                 <textarea
@@ -848,7 +901,11 @@ export default function SolicitudesViatico() {
             </div>
             <div className="flex items-center justify-end gap-3 p-6 bg-gray-50 border-t">
               <button
-                onClick={() => setMostrarModalDepositar(false)}
+                onClick={() => {
+                  setMostrarModalDepositar(false)
+                  setArchivoComprobante(null)
+                  setNotasAccion('')
+                }}
                 className="btn btn-secondary"
               >
                 Cancelar
