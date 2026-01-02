@@ -115,6 +115,7 @@ model Cliente {
   empresa      Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   cotizaciones Cotizacion[]
   fletes       Flete[]
+  calculos     Calculo[]
 
   @@map("clientes")
 }
@@ -834,4 +835,24 @@ enum EstadoComprobacionViatico {
   PENDIENTE_VALIDACION
   APROBADO
   RECHAZADO
+}
+
+// ==================== CÁLCULOS ====================
+
+model Calculo {
+  id          Int      @id @default(autoincrement())
+  folio       String   @unique
+  clienteId   Int
+  cliente     Cliente  @relation(fields: [clienteId], references: [id])
+  origen      String
+  destino     String
+  fecha       DateTime @default(now())
+  totalCosto  Float
+  precioVenta Float
+  datos       Json
+  estado      String   @default("BORRADOR")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("calculos")
 }
