@@ -167,12 +167,25 @@ export default function SolicitudesViatico() {
   const handleConceptoChange = (index: number, field: string, value: any) => { ... }
   */
 
-  const handleMontoChange = (field: string, value: string) => {
-    const nuevosDetalles = { ...formData.detalle, [field]: value }
+  const handleDetalleChange = (key: string, field: 'cantidad' | 'monto', value: string) => {
+    const currentDetalle = (formData.detalle as any)[key] || { cantidad: '', monto: '', unitario: PRECIOS_TABULADOR[key] || 0 }
+    const unitario = currentDetalle.unitario
 
-    // Calcular total
-    const total = Object.values(nuevosDetalles).reduce((sum: number, val: any) => {
-      return sum + (Number(val) || 0)
+    let nuevoDetalle = { ...currentDetalle, [field]: value }
+
+    // Calcular monto si cambia cantidad y hay precio unitario fijo
+    if (field === 'cantidad' && unitario > 0) {
+      const qty = Number(value) || 0
+      nuevoDetalle.monto = (qty * unitario).toString()
+    }
+
+    // Permitir editar monto libremente si el unitario es 0 (variables)
+
+    const nuevosDetalles = { ...formData.detalle, [key]: nuevoDetalle }
+
+    // Calcular total global
+    const total = Object.values(nuevosDetalles).reduce((sum: number, item: any) => {
+      return sum + (Number(item.monto) || 0)
     }, 0)
 
     setFormData({
@@ -718,24 +731,56 @@ export default function SolicitudesViatico() {
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 rounded-lg p-4 grid grid-cols-2 gap-4">
-                    {Object.keys(formData.detalle).map((key) => (
-                      <div key={key}>
-                        <label className="label capitalize">{key}</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                          <input
-                            type="number"
-                            placeholder="0.00"
-                            className="input pl-7"
-                            min="0"
-                            step="0.01"
-                            value={(formData.detalle as any)[key]}
-                            onChange={(e) => handleMontoChange(key, e.target.value)}
-                          />
-                        </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="grid grid-cols-12 gap-2 text-sm font-medium text-gray-500 mb-2 px-2">
+                        <div className="col-span-3">Concepto</div>
+                        <div className="col-span-2 text-right">Precio Unit.</div>
+                        <div className="col-span-3 text-right">Cantidad</div>
+                        <div className="col-span-4 text-right">Total</div>
                       </div>
-                    ))}
+                      {ITEMS_VIATICOS.map((key) => {
+                        const item = (formData.detalle as any)[key]
+                        // Fallback in case item is just a string (broken state)
+                        const cantidad = item?.cantidad || ''
+                        const monto = item?.monto || item || ''
+                        const unitario = item?.unitario || PRECIOS_TABULADOR[key] || 0
+                        const esFijo = unitario > 0
+
+                        return (
+                          <div key={key} className="grid grid-cols-12 gap-2 items-center bg-white p-2 rounded border border-gray-200">
+                            <div className="col-span-3">
+                              <label className="capitalize font-medium text-gray-700">{key}</label>
+                            </div>
+                            <div className="col-span-2 text-right text-gray-500 text-sm">
+                              {esFijo ? formatMoney(unitario) : '-'}
+                            </div>
+                            <div className="col-span-3">
+                              <input
+                                type="number"
+                                className="input py-1 text-right"
+                                placeholder="0"
+                                value={cantidad}
+                                onChange={(e) => handleDetalleChange(key, 'cantidad', e.target.value)}
+                              />
+                            </div>
+                            <div className="col-span-4">
+                              <div className="relative">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                                <input
+                                  type="number"
+                                  className="input py-1 pl-6 text-right font-semibold"
+                                  placeholder="0.00"
+                                  value={monto}
+                                  readOnly={esFijo}
+                                  onChange={(e) => handleDetalleChange(key, 'monto', e.target.value)}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
 
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
