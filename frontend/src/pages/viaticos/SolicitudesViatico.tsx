@@ -72,8 +72,6 @@ const PRECIOS_TABULADOR: Record<string, number> = {
   telefono: 100,
   pension: 80,
   regaderas: 90,
-  pension: 80,
-  regaderas: 90,
 }
 
 const ITEMS_VIATICOS = [
@@ -82,8 +80,6 @@ const ITEMS_VIATICOS = [
   'taxi',
   'casetas',
   'telefono',
-  'pension',
-  'regaderas',
   'pension',
   'regaderas',
 ]

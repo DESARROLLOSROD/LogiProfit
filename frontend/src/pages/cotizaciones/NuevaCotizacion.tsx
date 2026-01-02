@@ -39,7 +39,8 @@ export default function NuevaCotizacion() {
   const [simulacion, setSimulacion] = useState<Simulacion | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<CotizacionForm>()
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CotizacionForm>()
+  const location = useLocation()
 
   const kmEstimados = watch('kmEstimados')
   const precioCotizado = watch('precioCotizado')
@@ -48,7 +49,16 @@ export default function NuevaCotizacion() {
 
   useEffect(() => {
     fetchCatalogos()
-  }, [])
+
+    if (location.state?.calculoOrigen) {
+      const calc = location.state.calculoOrigen
+      setValue('clienteId', calc.clienteId)
+      setValue('origen', calc.origen)
+      setValue('destino', calc.destino)
+      setValue('precioCotizado', calc.precioVenta)
+      toast.success('Datos cargados desde el cálculo')
+    }
+  }, [location.state, setValue])
 
   useEffect(() => {
     if (kmEstimados && precioCotizado) {
