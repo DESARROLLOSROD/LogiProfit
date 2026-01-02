@@ -33,6 +33,8 @@ import CompararArchivo from './pages/integraciones/CompararArchivo'
 import EditarCotizacion from './pages/cotizaciones/EditarCotizacion'
 import Facturas from './pages/facturas/Facturas'
 import Documentos from './pages/documentos/Documentos'
+import CalculosList from './pages/calculos/CalculosList'
+import NuevoCalculo from './pages/calculos/NuevoCalculo'
 
 import SolicitudesViatico from './pages/viaticos/SolicitudesViatico'
 import ComprobacionesViatico from './pages/viaticos/ComprobacionesViatico'
@@ -133,8 +135,13 @@ export default function App() {
         {/* Documentos de Vehículos */}
         <Route path="/documentos" element={<Documentos />} />
 
+        {/* CÁLCULOS */}
+        <Route path="/calculos" element={<CalculosList />} />
+        <Route path="/calculos/nuevo" element={<NuevoCalculo />} />
+        <Route path="/calculos/:id" element={<NuevoCalculo />} />
+
         {/* Solicitudes de Combustible */}
-        
+
 
         {/* Viáticos */}
         <Route path="/viaticos/solicitudes" element={<SolicitudesViatico />} />
