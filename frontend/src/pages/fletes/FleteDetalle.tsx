@@ -136,7 +136,13 @@ export default function FleteDetalle() {
   const [choferesDisponibles, setChoferesDisponibles] = useState<Chofer[]>([])
 
   // Forms
-  const [nuevoGasto, setNuevoGasto] = useState({ tipo: 'DIESEL', monto: '', concepto: '' })
+  const [nuevoGasto, setNuevoGasto] = useState({
+    tipo: 'DIESEL',
+    monto: '',
+    concepto: '',
+    solicitudViaticoId: null as number | null,
+    comprobanteUrl: '' as string | undefined
+  })
   const [camionSeleccionado, setCamionSeleccionado] = useState('')
   const [choferForm, setChoferForm] = useState({
     choferId: '',
@@ -245,6 +251,31 @@ export default function FleteDetalle() {
     } catch { }
   }
 
+  const handleSeleccionarViatico = (viaticoId: string) => {
+    if (!viaticoId) {
+      // Limpiar selección
+      setNuevoGasto({
+        ...nuevoGasto,
+        solicitudViaticoId: null,
+        comprobanteUrl: '',
+        monto: '',
+        concepto: ''
+      })
+      return
+    }
+
+    const viatico = solicitudesViatico.find(v => v.id === Number(viaticoId))
+    if (viatico) {
+      setNuevoGasto({
+        ...nuevoGasto,
+        solicitudViaticoId: viatico.id,
+        monto: viatico.montoSolicitado.toString(),
+        concepto: `Viático ${viatico.tipoGasto} - ${viatico.operador?.nombre || 'Operador'}`,
+        comprobanteUrl: viatico.comprobanteDepositoUrl || ''
+      })
+    }
+  }
+
   const agregarGasto = async () => {
     try {
       await api.post('/gastos', {
@@ -253,10 +284,18 @@ export default function FleteDetalle() {
         monto: Number(nuevoGasto.monto),
         concepto: nuevoGasto.concepto,
         fecha: new Date().toISOString(),
+        solicitudViaticoId: nuevoGasto.solicitudViaticoId || undefined,
+        comprobanteUrl: nuevoGasto.comprobanteUrl || undefined,
       })
       toast.success('Gasto agregado')
       setShowGastoModal(false)
-      setNuevoGasto({ tipo: 'DIESEL', monto: '', concepto: '' })
+      setNuevoGasto({
+        tipo: 'DIESEL',
+        monto: '',
+        concepto: '',
+        solicitudViaticoId: null,
+        comprobanteUrl: ''
+      })
       fetchFlete()
     } catch { }
   }
@@ -911,40 +950,64 @@ export default function FleteDetalle() {
 
       {/* Modal Agregar Gasto */}
       {showGastoModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Agregar Gasto</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="label">Tipo</label>
-                <select
-                  className="input"
-                  value={nuevoGasto.tipo}
-                  onChange={(e) => setNuevoGasto({ ...nuevoGasto, tipo: e.target.value })}
-                >
-                  <option value="DIESEL">Diesel</option>
-                  <option value="CASETAS">Casetas</option>
-                  <option value="VIATICOS">Viáticos</option>
-                  <option value="MANTENIMIENTO">Mantenimiento</option>
-                  <option value="MULTA">Multa</option>
-                  <option value="OTRO">Otro</option>
-                </select>
-              </div>
-              <div>
-                <label className="label">Monto</label>
-                <input
-                  type="number"
-                  className="input"
-                  value={nuevoGasto.monto}
-                  onChange={(e) => setNuevoGasto({ ...nuevoGasto, monto: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <label className="label">Concepto</label>
-                <input
-                  className="input"
-                  value={nuevoGasto.concepto}
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Agregar Gasto</h3>
+              <div className="space-y-4">
+                {/* Selector de Viático */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <label className="label text-blue-900">Vincular con Solicitud de Viático (opcional)</label>
+                  <select
+                    className="input mt-1"
+                    value={nuevoGasto.solicitudViaticoId || ''}
+                    onChange={(e) => handleSeleccionarViatico(e.target.value)}
+                  >
+                    <option value="">Sin vincular</option>
+                    {solicitudesViatico
+                      .filter(v => v.estado === 'DEPOSITADO')
+                      .map(viatico => (
+                        <option key={viatico.id} value={viatico.id}>
+                          Folio #{viatico.id} - {viatico.tipoGasto} - ${viatico.montoSolicitado} - {viatico.operador?.nombre}
+                        </option>
+                      ))
+                    }
+                  </select>
+                  <p className="text-xs text-blue-700 mt-1">
+                    Al seleccionar un viático, se copiará automáticamente el monto y comprobante
+                  </p>
+                </div>
+
+                <div>
+                  <label className="label">Tipo</label>
+                  <select
+                    className="input"
+                    value={nuevoGasto.tipo}
+                    onChange={(e) => setNuevoGasto({ ...nuevoGasto, tipo: e.target.value })}
+                  >
+                    <option value="DIESEL">Diesel</option>
+                    <option value="CASETAS">Casetas</option>
+                    <option value="VIATICOS">Viáticos</option>
+                    <option value="MANTENIMIENTO">Mantenimiento</option>
+                    <option value="MULTA">Multa</option>
+                    <option value="OTRO">Otro</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Monto</label>
+                  <input
+                    type="number"
+                    className="input"
+                    value={nuevoGasto.monto}
+                    onChange={(e) => setNuevoGasto({ ...nuevoGasto, monto: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="label">Concepto</label>
+                  <input
+                    className="input"
+                    value={nuevoGasto.concepto}
                   onChange={(e) => setNuevoGasto({ ...nuevoGasto, concepto: e.target.value })}
                   placeholder="Descripción..."
                 />
