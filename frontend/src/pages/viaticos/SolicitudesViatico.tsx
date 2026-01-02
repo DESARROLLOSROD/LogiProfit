@@ -7,6 +7,9 @@ import {
   XMarkIcon,
   TrashIcon,
   BanknotesIcon,
+  TruckIcon,
+  CalendarIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
@@ -567,114 +570,151 @@ export default function SolicitudesViatico() {
       {/* Modal Formulario Nueva Solicitud */}
       {mostrarFormulario && (
         <div className="modal-overlay">
-          <div className="modal-content max-w-3xl">
-            <div className="modal-header">
-              <h2 className="modal-title">Nueva Solicitud de Viáticos</h2>
-              <button onClick={() => setMostrarFormulario(false)} className="modal-close">
+          <div className="modal-content max-w-4xl">
+            <div className="modal-header bg-gradient-to-r from-blue-600 to-blue-700">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <BanknotesIcon className="h-6 w-6 text-white" />
+                </div>
+                <h2 className="modal-title text-white">Nueva Solicitud de Viáticos</h2>
+              </div>
+              <button onClick={() => setMostrarFormulario(false)} className="modal-close text-white hover:bg-white/20">
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div className="modal-body space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Flete</label>
-                    <select
-                      className="input"
-                      value={formData.fleteId}
-                      onChange={(e) => setFormData({ ...formData, fleteId: Number(e.target.value) })}
-                      required
-                    >
-                      <option value={0}>Seleccione un flete</option>
-                      {fletes.map((flete) => (
-                        <option key={flete.id} value={flete.id}>
-                          {flete.folio} - {flete.cliente.nombre}
-                        </option>
-                      ))}
-                    </select>
+              <div className="modal-body space-y-6">
+                {/* Sección: Información General */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                    <TruckIcon className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-semibold text-gray-700">Información General</h3>
                   </div>
 
-                  <div>
-                    <label className="label">Tipo de Gasto</label>
-                    <select
-                      className="input"
-                      value={formData.tipoGasto}
-                      onChange={(e) => setFormData({ ...formData, tipoGasto: e.target.value })}
-                      required
-                    >
-                      {TIPOS_GASTO.map((tipo) => (
-                        <option key={tipo.value} value={tipo.value}>
-                          {tipo.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="label flex items-center gap-2">
+                        <TruckIcon className="h-4 w-4 text-gray-500" />
+                        Flete
+                      </label>
+                      <select
+                        className="input"
+                        value={formData.fleteId}
+                        onChange={(e) => setFormData({ ...formData, fleteId: Number(e.target.value) })}
+                        required
+                      >
+                        <option value={0}>Seleccione un flete</option>
+                        {fletes.map((flete) => (
+                          <option key={flete.id} value={flete.id}>
+                            {flete.folio} - {flete.cliente.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div>
-                    <label className="label">Período Inicio</label>
-                    <input
-                      type="date"
-                      className="input"
-                      value={formData.periodoInicio}
-                      onChange={(e) => setFormData({ ...formData, periodoInicio: e.target.value })}
-                      required
-                    />
-                  </div>
+                    <div>
+                      <label className="label flex items-center gap-2">
+                        <BanknotesIcon className="h-4 w-4 text-gray-500" />
+                        Tipo de Gasto
+                      </label>
+                      <select
+                        className="input"
+                        value={formData.tipoGasto}
+                        onChange={(e) => setFormData({ ...formData, tipoGasto: e.target.value })}
+                        required
+                      >
+                        {TIPOS_GASTO.map((tipo) => (
+                          <option key={tipo.value} value={tipo.value}>
+                            {tipo.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div>
-                    <label className="label">Período Fin</label>
-                    <input
-                      type="date"
-                      className="input"
-                      value={formData.periodoFin}
-                      onChange={(e) => setFormData({ ...formData, periodoFin: e.target.value })}
-                      required
-                    />
+                    <div>
+                      <label className="label flex items-center gap-2">
+                        <CalendarIcon className="h-4 w-4 text-gray-500" />
+                        Período Inicio
+                      </label>
+                      <input
+                        type="date"
+                        className="input"
+                        value={formData.periodoInicio}
+                        onChange={(e) => setFormData({ ...formData, periodoInicio: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="label flex items-center gap-2">
+                        <CalendarIcon className="h-4 w-4 text-gray-500" />
+                        Período Fin
+                      </label>
+                      <input
+                        type="date"
+                        className="input"
+                        value={formData.periodoFin}
+                        onChange={(e) => setFormData({ ...formData, periodoFin: e.target.value })}
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="label">Conceptos</label>
+                {/* Sección: Conceptos y Desglose */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                    <div className="flex items-center gap-2">
+                      <DocumentTextIcon className="h-5 w-5 text-blue-600" />
+                      <h3 className="font-semibold text-gray-700">Conceptos y Desglose</h3>
+                    </div>
                     <button
                       type="button"
                       onClick={handleAgregarConcepto}
-                      className="btn btn-sm btn-secondary"
+                      className="btn btn-sm btn-secondary flex items-center gap-1.5"
                     >
-                      <PlusIcon className="h-4 w-4 mr-1" />
+                      <PlusIcon className="h-4 w-4" />
                       Agregar Concepto
                     </button>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                     {formData.detalle.conceptos.map((concepto: any, index: number) => (
-                      <div key={index} className="flex gap-2 items-start">
-                        <input
-                          type="text"
-                          placeholder="Concepto"
-                          className="input flex-1"
-                          value={concepto.concepto}
-                          onChange={(e) => handleConceptoChange(index, 'concepto', e.target.value)}
-                          required
-                        />
-                        <input
-                          type="number"
-                          placeholder="Monto"
-                          className="input w-32"
-                          step="0.01"
-                          min="0"
-                          value={concepto.monto}
-                          onChange={(e) =>
-                            handleConceptoChange(index, 'monto', Number(e.target.value))
-                          }
-                          required
-                        />
+                      <div key={index} className="flex gap-3 items-start bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            placeholder="Descripción del concepto"
+                            className="input"
+                            value={concepto.concepto}
+                            onChange={(e) => handleConceptoChange(index, 'concepto', e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="w-40">
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                            <input
+                              type="number"
+                              placeholder="0.00"
+                              className="input pl-7"
+                              step="0.01"
+                              min="0"
+                              value={concepto.monto}
+                              onChange={(e) =>
+                                handleConceptoChange(index, 'monto', Number(e.target.value))
+                              }
+                              required
+                            />
+                          </div>
+                        </div>
                         {formData.detalle.conceptos.length > 1 && (
                           <button
                             type="button"
                             onClick={() => handleEliminarConcepto(index)}
                             className="btn btn-sm btn-danger"
+                            title="Eliminar concepto"
                           >
                             <TrashIcon className="h-4 w-4" />
                           </button>
@@ -683,25 +723,39 @@ export default function SolicitudesViatico() {
                     ))}
                   </div>
 
-                  <div className="mt-3 text-right">
-                    <span className="text-lg font-semibold">
-                      Total: {formatMoney(formData.montoSolicitado)}
-                    </span>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-blue-900">Monto Total Solicitado:</span>
+                      <span className="text-2xl font-bold text-blue-700">
+                        {formatMoney(formData.montoSolicitado)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="label">Notas (opcional)</label>
-                  <textarea
-                    className="textarea"
-                    rows={3}
-                    value={formData.notas}
-                    onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
-                  />
+                {/* Sección: Notas Adicionales */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                    <DocumentTextIcon className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-semibold text-gray-700">Notas Adicionales</h3>
+                  </div>
+
+                  <div>
+                    <label className="label text-sm text-gray-600">
+                      Agregue cualquier información adicional relevante para esta solicitud
+                    </label>
+                    <textarea
+                      className="textarea"
+                      rows={4}
+                      placeholder="Ejemplo: Viaje a Monterrey del 15 al 18 de enero para entrega de mercancía..."
+                      value={formData.notas}
+                      onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="modal-footer">
+              <div className="modal-footer bg-gray-50">
                 <button
                   type="button"
                   onClick={() => setMostrarFormulario(false)}
@@ -709,8 +763,22 @@ export default function SolicitudesViatico() {
                 >
                   Cancelar
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={guardando}>
-                  {guardando ? 'Guardando...' : 'Crear Solicitud'}
+                <button
+                  type="submit"
+                  className="btn btn-primary flex items-center gap-2"
+                  disabled={guardando}
+                >
+                  {guardando ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircleIcon className="h-5 w-5" />
+                      Crear Solicitud
+                    </>
+                  )}
                 </button>
               </div>
             </form>
