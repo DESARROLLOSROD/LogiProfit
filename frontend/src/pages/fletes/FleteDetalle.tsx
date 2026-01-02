@@ -42,6 +42,7 @@ interface SolicitudViatico {
   estado: string
   notas?: string
   motivoCancelacion?: string
+  comprobanteDepositoUrl?: string
   createdAt: string
   operador: {
     nombre: string
@@ -1008,18 +1009,19 @@ export default function FleteDetalle() {
                   <input
                     className="input"
                     value={nuevoGasto.concepto}
-                  onChange={(e) => setNuevoGasto({ ...nuevoGasto, concepto: e.target.value })}
-                  placeholder="Descripción..."
-                />
+                    onChange={(e) => setNuevoGasto({ ...nuevoGasto, concepto: e.target.value })}
+                    placeholder="Descripción..."
+                  />
+                </div>
               </div>
-            </div>
-            <div className="flex gap-2 mt-6">
-              <button onClick={() => setShowGastoModal(false)} className="btn-secondary flex-1">
-                Cancelar
-              </button>
-              <button onClick={agregarGasto} className="btn-primary flex-1">
-                Guardar
-              </button>
+              <div className="flex gap-2 mt-6">
+                <button onClick={() => setShowGastoModal(false)} className="btn-secondary flex-1">
+                  Cancelar
+                </button>
+                <button onClick={agregarGasto} className="btn-primary flex-1">
+                  Guardar
+                </button>
+              </div>
             </div>
           </div>
         </div>
