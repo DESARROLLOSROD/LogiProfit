@@ -72,7 +72,8 @@ const PRECIOS_TABULADOR: Record<string, number> = {
   telefono: 100,
   pension: 80,
   regaderas: 90,
-  diesel: 0,
+  pension: 80,
+  regaderas: 90,
 }
 
 const ITEMS_VIATICOS = [
@@ -83,7 +84,8 @@ const ITEMS_VIATICOS = [
   'telefono',
   'pension',
   'regaderas',
-  'diesel',
+  'pension',
+  'regaderas',
 ]
 
 export default function SolicitudesViatico() {
@@ -115,7 +117,7 @@ export default function SolicitudesViatico() {
   // Formulario nueva solicitud
   const [formData, setFormData] = useState({
     fleteId: 0,
-    tipoGasto: 'ALIMENTOS',
+    tipoGasto: 'OTROS',
     periodoInicio: '',
     periodoFin: '',
     montoSolicitado: 0,
@@ -240,7 +242,7 @@ export default function SolicitudesViatico() {
   const resetForm = () => {
     setFormData({
       fleteId: 0,
-      tipoGasto: 'ALIMENTOS',
+      tipoGasto: 'OTROS',
       periodoInicio: '',
       periodoFin: '',
       montoSolicitado: 0,
@@ -673,24 +675,7 @@ export default function SolicitudesViatico() {
                       </select>
                     </div>
 
-                    <div>
-                      <label className="label flex items-center gap-2">
-                        <BanknotesIcon className="h-4 w-4 text-gray-500" />
-                        Tipo de Gasto
-                      </label>
-                      <select
-                        className="input"
-                        value={formData.tipoGasto}
-                        onChange={(e) => setFormData({ ...formData, tipoGasto: e.target.value })}
-                        required
-                      >
-                        {TIPOS_GASTO.map((tipo) => (
-                          <option key={tipo.value} value={tipo.value}>
-                            {tipo.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {/* Tipo de Gasto Removed */}
 
                     <div>
                       <label className="label flex items-center gap-2">
