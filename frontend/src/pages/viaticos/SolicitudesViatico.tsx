@@ -64,6 +64,28 @@ const TIPOS_GASTO = [
   { value: 'OTROS', label: 'Otros' },
 ]
 
+const PRECIOS_TABULADOR: Record<string, number> = {
+  comidas: 100,
+  federales: 100,
+  taxi: 0,
+  casetas: 0,
+  telefono: 100,
+  pension: 80,
+  regaderas: 90,
+  diesel: 0,
+}
+
+const ITEMS_VIATICOS = [
+  'comidas',
+  'federales',
+  'taxi',
+  'casetas',
+  'telefono',
+  'pension',
+  'regaderas',
+  'diesel',
+]
+
 export default function SolicitudesViatico() {
   const { can } = usePermissions()
   const [solicitudes, setSolicitudes] = useState<SolicitudViatico[]>([])
@@ -98,16 +120,11 @@ export default function SolicitudesViatico() {
     periodoFin: '',
     montoSolicitado: 0,
     // detalle: { conceptos: [{ concepto: '', monto: 0 }] }, // REMOVED: Old structure
-    detalle: {
-      comidas: '',
-      federales: '',
-      taxi: '',
-      casetas: '',
-      telefono: '',
-      pension: '',
-      regaderas: '',
-      diesel: '',
-    },
+    // Inicializar detalle con la estructura correcta
+    detalle: ITEMS_VIATICOS.reduce((acc, key) => ({
+      ...acc,
+      [key]: { cantidad: '', monto: '', unitario: PRECIOS_TABULADOR[key] || 0 }
+    }), {}),
     notas: '',
   })
   const [guardando, setGuardando] = useState(false)
@@ -214,16 +231,10 @@ export default function SolicitudesViatico() {
       periodoInicio: '',
       periodoFin: '',
       montoSolicitado: 0,
-      detalle: {
-        comidas: '',
-        federales: '',
-        taxi: '',
-        casetas: '',
-        telefono: '',
-        pension: '',
-        regaderas: '',
-        diesel: '',
-      },
+      detalle: ITEMS_VIATICOS.reduce((acc, key) => ({
+        ...acc,
+        [key]: { cantidad: '', monto: '', unitario: PRECIOS_TABULADOR[key] || 0 }
+      }), {}),
       notas: '',
     })
   }
