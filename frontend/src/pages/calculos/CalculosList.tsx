@@ -32,9 +32,9 @@ export default function CalculosList() {
     }
 
     const convertirACotizacion = (calculo: any) => {
-        // Navegar a crear cotización pasando el cálculo como estado o query params
-        // Asumiremos que NuevoCotizacion puede leer el state de ubicación
-        navigate('/cotizaciones/nueva', { state: { calculoOrigen: calculo } })
+        // Navegar a crear cotización pasando el cálculo completo como estado
+        navigate('/cotizaciones/nueva', { state: { calculo } })
+        toast.success(`Creando cotización desde ${calculo.folio}`)
     }
 
     return (

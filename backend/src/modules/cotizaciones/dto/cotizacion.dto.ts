@@ -8,6 +8,11 @@ export class CreateCotizacionDto {
   @IsNumber()
   clienteId: number;
 
+  @ApiProperty({ required: false, example: 1, description: 'ID del cálculo origen (opcional)' })
+  @IsNumber()
+  @IsOptional()
+  calculoId?: number;
+
   @ApiProperty({ example: 'Hermosillo, SON', description: 'Origen del viaje' })
   @IsString()
   @IsNotEmpty()
@@ -39,10 +44,16 @@ export class CreateCotizacionDto {
   @IsNumber()
   kmEstimado: number;
 
-  // Precio cotizado al cliente
-  @ApiProperty({ example: 45000, description: 'Precio total cotizado al cliente' })
+  // Precio base (subtotal sin impuestos)
+  @ApiProperty({ example: 38793.10, description: 'Subtotal sin impuestos' })
   @IsNumber()
-  precioCotizado: number;
+  subtotal: number;
+
+  // Precio cotizado al cliente (DEPRECADO - se calcula automáticamente)
+  @ApiProperty({ required: false, example: 45000, description: 'Precio total cotizado al cliente (DEPRECADO - usar subtotal)' })
+  @IsNumber()
+  @IsOptional()
+  precioCotizado?: number;
 
   @ApiProperty({ required: false, description: 'Notas adicionales' })
   @IsString()
@@ -86,6 +97,11 @@ export class UpdateCotizacionDto {
   @IsNumber()
   @IsOptional()
   kmEstimado?: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  subtotal?: number;
 
   @ApiProperty({ required: false })
   @IsNumber()

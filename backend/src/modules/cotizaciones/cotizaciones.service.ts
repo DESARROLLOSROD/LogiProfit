@@ -26,21 +26,64 @@ export class CotizacionesService {
     return `COT-${numero}`;
   }
 
+  /**
+   * Calcula IVA, retención y total según el tipo de persona del cliente
+   * Persona Física: Total = Subtotal + IVA (16%)
+   * Persona Moral: Total = Subtotal + IVA (16%) - Retención (4%)
+   */
+  private async calcularImpuestos(clienteId: number, subtotal: number) {
+    const cliente = await this.prisma.cliente.findUnique({
+      where: { id: clienteId },
+      select: { tipoPersona: true },
+    });
+
+    if (!cliente) {
+      throw new NotFoundException(`Cliente con ID ${clienteId} no encontrado`);
+    }
+
+    const IVA_RATE = 0.16; // 16%
+    const RETENCION_RATE = 0.04; // 4%
+
+    const iva = subtotal * IVA_RATE;
+    const retencion = cliente.tipoPersona === 'MORAL' ? subtotal * RETENCION_RATE : 0;
+    const total = subtotal + iva - retencion;
+
+    return {
+      iva: Number(iva.toFixed(2)),
+      retencion: Number(retencion.toFixed(2)),
+      total: Number(total.toFixed(2)),
+    };
+  }
+
   async create(empresaId: number, dto: CreateCotizacionDto) {
     const folio = await this.generarFolio(empresaId);
+
+    // Calcular impuestos basados en el tipo de persona del cliente
+    const { iva, retencion, total } = await this.calcularImpuestos(
+      dto.clienteId,
+      dto.subtotal,
+    );
+
+    // Si viene precioCotizado (legacy), usarlo como subtotal
+    const subtotal = dto.subtotal || dto.precioCotizado || 0;
 
     return this.prisma.cotizacion.create({
       data: {
         empresaId,
         folio,
         clienteId: dto.clienteId,
+        calculoId: dto.calculoId,
         origen: dto.origen,
         destino: dto.destino,
         tipoCarga: dto.tipoCarga,
         pesoCarga: dto.pesoCarga,
         dimensiones: dto.dimensiones,
         kmEstimado: dto.kmEstimado,
-        precioCotizado: dto.precioCotizado,
+        subtotal,
+        iva,
+        retencion,
+        total,
+        precioCotizado: dto.precioCotizado || total, // Compatibilidad
         notas: dto.notas,
         validoHasta: dto.validoHasta,
         estado: EstadoCotizacion.BORRADOR,
@@ -66,6 +109,10 @@ export class CotizacionesService {
     return cotizaciones.map(cot => ({
       ...cot,
       kmEstimado: this.toNumber(cot.kmEstimado),
+      subtotal: this.toNumber(cot.subtotal),
+      iva: this.toNumber(cot.iva),
+      retencion: this.toNumber(cot.retencion),
+      total: this.toNumber(cot.total),
       precioCotizado: this.toNumber(cot.precioCotizado),
       pesoCarga: cot.pesoCarga ? this.toNumber(cot.pesoCarga) : null,
     }));
@@ -76,6 +123,7 @@ export class CotizacionesService {
       where: { id, empresaId },
       include: {
         cliente: true,
+        calculo: true,
         fletes: true,
         conceptos: {
           orderBy: { orden: 'asc' }
@@ -91,6 +139,10 @@ export class CotizacionesService {
     return {
       ...cotizacion,
       kmEstimado: this.toNumber(cotizacion.kmEstimado),
+      subtotal: this.toNumber(cotizacion.subtotal),
+      iva: this.toNumber(cotizacion.iva),
+      retencion: this.toNumber(cotizacion.retencion),
+      total: this.toNumber(cotizacion.total),
       precioCotizado: this.toNumber(cotizacion.precioCotizado),
       pesoCarga: cotizacion.pesoCarga ? this.toNumber(cotizacion.pesoCarga) : null,
       conceptos: cotizacion.conceptos.map(c => ({
@@ -103,11 +155,28 @@ export class CotizacionesService {
   }
 
   async update(id: number, empresaId: number, dto: UpdateCotizacionDto) {
-    await this.findOne(id, empresaId);
+    const cotizacion = await this.findOne(id, empresaId);
+
+    // Si se actualiza el subtotal, recalcular impuestos
+    let updateData: any = { ...dto };
+
+    if (dto.subtotal !== undefined) {
+      const { iva, retencion, total } = await this.calcularImpuestos(
+        cotizacion.clienteId,
+        dto.subtotal,
+      );
+      updateData = {
+        ...updateData,
+        iva,
+        retencion,
+        total,
+        precioCotizado: total, // Mantener compatibilidad
+      };
+    }
 
     return this.prisma.cotizacion.update({
       where: { id },
-      data: dto,
+      data: updateData,
       include: { cliente: true, conceptos: true },
     });
   }

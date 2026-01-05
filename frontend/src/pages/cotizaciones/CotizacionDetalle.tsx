@@ -24,14 +24,18 @@ interface Concepto {
 interface Cotizacion {
   id: number
   folio: string
-  cliente: { id: number; nombre: string }
+  cliente: { id: number; nombre: string; tipoPersona?: 'FISICA' | 'MORAL' }
   origen: string
   destino: string
   tipoCarga?: string
   pesoCarga?: number
   dimensiones?: string
   kmEstimado: number
-  precioCotizado: number
+  subtotal: number
+  iva: number
+  retencion: number
+  total: number
+  precioCotizado: number // DEPRECADO
   estado: string
   notas?: string
   validoHasta?: string
@@ -389,16 +393,59 @@ export default function CotizacionDetalle() {
         )}
       </div>
 
-      {/* Precio Cotizado */}
-      <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-        <div className="flex justify-between items-center">
+      {/* Desglose de la Cotización */}
+      <div className="bg-gradient-to-br from-blue-50 to-green-50 border border-blue-200 rounded-lg p-6 mb-6">
+        <div className="flex justify-between items-start mb-4">
           <div>
-            <p className="text-sm text-green-700 font-medium">PRECIO COTIZADO AL CLIENTE</p>
-            <p className="text-3xl font-bold text-green-900 mt-1">
-              ${cotizacion.precioCotizado.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
+            <p className="text-sm text-blue-700 font-semibold">DESGLOSE DE LA COTIZACIÓN</p>
+            <p className="text-xs text-gray-600 mt-1">
+              Cliente: <span className="font-medium">{cotizacion.cliente.nombre}</span>
+              {cotizacion.cliente.tipoPersona && (
+                <span className="ml-2 px-2 py-0.5 bg-white rounded text-xs">
+                  {cotizacion.cliente.tipoPersona === 'FISICA' ? 'Persona Física' : 'Persona Moral'}
+                </span>
+              )}
             </p>
           </div>
-          <DocumentTextIcon className="h-16 w-16 text-green-600 opacity-20" />
+          <DocumentTextIcon className="h-12 w-12 text-blue-600 opacity-20" />
+        </div>
+
+        <div className="bg-white rounded-lg p-4 space-y-3">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-700">Subtotal:</span>
+            <span className="font-semibold text-gray-900">
+              ${cotizacion.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-700">IVA (16%):</span>
+            <span className="font-semibold text-blue-600">
+              + ${cotizacion.iva.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+
+          {cotizacion.retencion > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-700">Retención (4%):</span>
+              <span className="font-semibold text-red-600">
+                - ${cotizacion.retencion.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          )}
+
+          <div className="border-t-2 border-gray-300 pt-3 mt-3 flex justify-between">
+            <span className="font-bold text-gray-900 text-lg">TOTAL:</span>
+            <span className="font-bold text-green-700 text-2xl">
+              ${cotizacion.total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN
+            </span>
+          </div>
+
+          <p className="text-xs text-gray-500 mt-2 border-t pt-2">
+            {cotizacion.cliente.tipoPersona === 'MORAL'
+              ? '* Total = Subtotal + IVA (16%) - Retención (4%) para Persona Moral'
+              : '* Total = Subtotal + IVA (16%) para Persona Física'}
+          </p>
         </div>
       </div>
 
