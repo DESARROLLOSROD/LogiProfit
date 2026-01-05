@@ -1,5 +1,6 @@
-import { IsNotEmpty, IsOptional, IsString, IsEmail, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsEmail, IsBoolean, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { TipoPersona } from '@prisma/client';
 
 export class CreateClienteDto {
   @ApiProperty({ example: 'Cemex S.A. de C.V.' })
@@ -26,6 +27,16 @@ export class CreateClienteDto {
   @IsString()
   @IsOptional()
   direccion?: string;
+
+  @ApiProperty({
+    enum: TipoPersona,
+    example: TipoPersona.FISICA,
+    description: 'Tipo de persona para cálculo de impuestos',
+    required: false
+  })
+  @IsEnum(TipoPersona)
+  @IsOptional()
+  tipoPersona?: TipoPersona;
 }
 
 export class UpdateClienteDto {
@@ -53,6 +64,11 @@ export class UpdateClienteDto {
   @IsString()
   @IsOptional()
   direccion?: string;
+
+  @ApiProperty({ enum: TipoPersona, required: false })
+  @IsEnum(TipoPersona)
+  @IsOptional()
+  tipoPersona?: TipoPersona;
 
   @ApiProperty({ required: false })
   @IsBoolean()

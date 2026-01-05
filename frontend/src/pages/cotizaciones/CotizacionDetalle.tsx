@@ -25,6 +25,7 @@ interface Cotizacion {
   id: number
   folio: string
   cliente: { id: number; nombre: string; tipoPersona?: 'FISICA' | 'MORAL' }
+  calculo?: { id: number; folio: string } // Cálculo origen
   origen: string
   destino: string
   tipoCarga?: string
@@ -220,7 +221,22 @@ export default function CotizacionDetalle() {
 
       {/* Información Principal */}
       <div className="bg-white shadow rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Información de la Cotización</h2>
+        <div className="flex justify-between items-start mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Información de la Cotización</h2>
+          {cotizacion.calculo && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full font-medium">
+                📊 Desde Cálculo
+              </span>
+              <button
+                onClick={() => navigate(`/calculos/${cotizacion.calculo.id}`)}
+                className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-medium transition-colors"
+              >
+                Ver {cotizacion.calculo.folio}
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Cliente y Ruta */}

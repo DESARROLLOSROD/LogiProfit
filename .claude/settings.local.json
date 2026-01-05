@@ -47,7 +47,8 @@
       "Bash(npm run prisma:migrate:dev:*)",
       "Bash(cd:*)",
       "Bash(npx prisma migrate:*)",
-      "Bash(del update_cotizaciones.sql)"
+      "Bash(del update_cotizaciones.sql)",
+      "Bash(timeout 30 npx ts-node:*)"
     ]
   }
 }

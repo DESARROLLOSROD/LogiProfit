@@ -119,8 +119,15 @@ export default function NuevaCotizacionMejorada() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.clienteId || !formData.origen || !formData.destino || !formData.kmEstimado || !formData.subtotal) {
+    // Validación de campos obligatorios
+    if (!formData.clienteId || !formData.origen || !formData.destino || !formData.kmEstimado) {
       toast.error('Por favor completa todos los campos obligatorios')
+      return
+    }
+
+    // Validación específica del subtotal
+    if (!formData.subtotal || Number(formData.subtotal) <= 0) {
+      toast.error('El subtotal debe ser mayor a cero')
       return
     }
 

@@ -11,6 +11,7 @@ interface Cliente {
   email?: string
   telefono?: string
   direccion?: string
+  tipoPersona?: 'FISICA' | 'MORAL'
   activo: boolean
 }
 
@@ -25,6 +26,7 @@ export default function Clientes() {
     email: '',
     telefono: '',
     direccion: '',
+    tipoPersona: 'FISICA' as 'FISICA' | 'MORAL',
   })
 
   useEffect(() => {
@@ -50,6 +52,7 @@ export default function Clientes() {
       email: '',
       telefono: '',
       direccion: '',
+      tipoPersona: 'FISICA',
     })
     setShowModal(true)
   }
@@ -62,6 +65,7 @@ export default function Clientes() {
       email: cliente.email || '',
       telefono: cliente.telefono || '',
       direccion: cliente.direccion || '',
+      tipoPersona: cliente.tipoPersona || 'FISICA',
     })
     setShowModal(true)
   }
@@ -94,6 +98,7 @@ export default function Clientes() {
       email: form.email || undefined,
       telefono: form.telefono || undefined,
       direccion: form.direccion || undefined,
+      tipoPersona: form.tipoPersona,
     }
 
     try {
@@ -149,6 +154,7 @@ export default function Clientes() {
             <tr>
               <th>Nombre</th>
               <th>RFC</th>
+              <th>Tipo Persona</th>
               <th>Email</th>
               <th>Teléfono</th>
               <th>Estado</th>
@@ -158,7 +164,7 @@ export default function Clientes() {
           <tbody className="bg-white divide-y divide-gray-200">
             {clientes.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-gray-500">
+                <td colSpan={7} className="text-center py-8 text-gray-500">
                   <BuildingOfficeIcon className="w-12 h-12 mx-auto mb-2 text-gray-400" />
                   No hay clientes registrados
                 </td>
@@ -168,6 +174,15 @@ export default function Clientes() {
                 <tr key={cliente.id}>
                   <td className="font-medium text-gray-900">{cliente.nombre}</td>
                   <td className="text-gray-600">{cliente.rfc || '-'}</td>
+                  <td>
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      cliente.tipoPersona === 'MORAL'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {cliente.tipoPersona === 'MORAL' ? 'Moral' : 'Física'}
+                    </span>
+                  </td>
                   <td className="text-gray-600">{cliente.email || '-'}</td>
                   <td className="text-gray-600">{cliente.telefono || '-'}</td>
                   <td>
@@ -210,6 +225,21 @@ export default function Clientes() {
                   value={form.nombre}
                   onChange={(e) => setForm({ ...form, nombre: e.target.value })}
                 />
+              </div>
+
+              <div>
+                <label className="label">Tipo de Persona *</label>
+                <select
+                  className="input"
+                  value={form.tipoPersona}
+                  onChange={(e) => setForm({ ...form, tipoPersona: e.target.value as 'FISICA' | 'MORAL' })}
+                >
+                  <option value="FISICA">Persona Física</option>
+                  <option value="MORAL">Persona Moral</option>
+                </select>
+                <p className="text-sm text-gray-500 mt-1">
+                  Determina el cálculo de IVA y retención en cotizaciones
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
