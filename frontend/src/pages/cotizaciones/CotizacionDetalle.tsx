@@ -229,10 +229,10 @@ export default function CotizacionDetalle() {
                 📊 Desde Cálculo
               </span>
               <button
-                onClick={() => navigate(`/calculos/${cotizacion.calculo.id}`)}
+                onClick={() => navigate(`/calculos/${cotizacion.calculo?.id}`)}
                 className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-medium transition-colors"
               >
-                Ver {cotizacion.calculo.folio}
+                Ver {cotizacion.calculo?.folio}
               </button>
             </div>
           )}
