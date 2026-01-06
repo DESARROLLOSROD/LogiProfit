@@ -7,6 +7,7 @@ import api from '../../lib/api'
 interface CalculoState {
     clienteId: number
     ruta: { origen: string; destino: string; kmsCargado: number; kmsVacio: number }
+    carga: { tipoCarga: string; pesoCarga: number; dimensiones: string } // NEW: Información de la carga
     diesel: { rendimientoCargado: number; rendimientoVacio: number; precio: number }
     gastos: { casetas: number; permisos: number; otros: number }
     viaticos: {
@@ -26,6 +27,7 @@ export default function NuevoCalculo() {
     const [state, setState] = useState<CalculoState>({
         clienteId: 0,
         ruta: { origen: '', destino: '', kmsCargado: 0, kmsVacio: 0 },
+        carga: { tipoCarga: '', pesoCarga: 0, dimensiones: '' }, // NEW: Información de la carga
         diesel: { rendimientoCargado: 1.9, rendimientoVacio: 2.1, precio: 24.00 },
         gastos: { casetas: 0, permisos: 0, otros: 0 },
         viaticos: {
@@ -117,7 +119,11 @@ export default function NuevoCalculo() {
             destino: state.ruta.destino,
             totalCosto: results.costoTotal,
             precioVenta: results.precioVenta,
-            datos: state
+            datos: state,
+            // Información de la carga (opcional)
+            tipoCarga: state.carga.tipoCarga || undefined,
+            pesoCarga: state.carga.pesoCarga || undefined,
+            dimensiones: state.carga.dimensiones || undefined
         }
 
         try {
@@ -178,6 +184,41 @@ export default function NuevoCalculo() {
                             <div>
                                 <label className="label">Destino</label>
                                 <input className="input" value={state.ruta.destino} onChange={e => update('ruta', 'destino', e.target.value)} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Información de la Carga (Opcional) */}
+                    <div className="card bg-white p-4 shadow-sm space-y-4">
+                        <h3 className="font-semibold text-lg border-b pb-2">Información de la Carga (Opcional)</h3>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <label className="label">Tipo de Carga</label>
+                                <input
+                                    className="input"
+                                    placeholder="Ej: Carga general"
+                                    value={state.carga.tipoCarga}
+                                    onChange={e => update('carga', 'tipoCarga', e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="label">Peso (Toneladas)</label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    placeholder="Ej: 20"
+                                    value={state.carga.pesoCarga || ''}
+                                    onChange={e => update('carga', 'pesoCarga', e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="label">Dimensiones</label>
+                                <input
+                                    className="input"
+                                    placeholder="Ej: 12 x 2.5 x 2.6 M"
+                                    value={state.carga.dimensiones}
+                                    onChange={e => update('carga', 'dimensiones', e.target.value)}
+                                />
                             </div>
                         </div>
                     </div>

@@ -28,4 +28,17 @@ export class CreateCalculoDto {
     @IsString()
     @IsOptional()
     estado?: string;
+
+    // Información de la carga (opcional)
+    @IsString()
+    @IsOptional()
+    tipoCarga?: string;
+
+    @IsNumber()
+    @IsOptional()
+    pesoCarga?: number; // toneladas
+
+    @IsString()
+    @IsOptional()
+    dimensiones?: string; // "L x A x H"
 }

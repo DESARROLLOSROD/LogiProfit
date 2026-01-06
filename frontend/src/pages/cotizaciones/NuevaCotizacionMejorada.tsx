@@ -31,6 +31,9 @@ interface Calculo {
   origen: string
   destino: string
   precioVenta: number
+  tipoCarga?: string
+  pesoCarga?: number
+  dimensiones?: string
   datos: any
 }
 
@@ -73,6 +76,10 @@ export default function NuevaCotizacionMejorada() {
         origen: calculoOrigen.origen,
         destino: calculoOrigen.destino,
         subtotal: calculoOrigen.precioVenta.toString(),
+        // Precargar información de la carga si existe
+        tipoCarga: calculoOrigen.tipoCarga || '',
+        pesoCarga: calculoOrigen.pesoCarga?.toString() || '',
+        dimensiones: calculoOrigen.dimensiones || '',
       }))
     }
   }, [location.state])

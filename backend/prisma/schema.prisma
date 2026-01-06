@@ -866,6 +866,12 @@ model Calculo {
   precioVenta  Float
   datos        Json
   estado       String        @default("BORRADOR")
+
+  // Información de la carga (opcional)
+  tipoCarga    String?
+  pesoCarga    Decimal?      @db.Decimal(10, 2) // toneladas
+  dimensiones  String?       // "L x A x H"
+
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
