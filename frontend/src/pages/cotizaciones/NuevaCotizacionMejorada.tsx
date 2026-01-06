@@ -69,6 +69,11 @@ export default function NuevaCotizacionMejorada() {
     // Si viene desde un cálculo, precargar datos
     const calculoOrigen = location.state?.calculo as Calculo | undefined
     if (calculoOrigen) {
+      // Calcular kilómetros estimados: kms cargados + kms vacíos
+      const kmsCargado = calculoOrigen.datos?.ruta?.kmsCargado || 0
+      const kmsVacio = calculoOrigen.datos?.ruta?.kmsVacio || 0
+      const kmEstimadoTotal = kmsCargado + kmsVacio
+
       setFormData(prev => ({
         ...prev,
         calculoId: calculoOrigen.id.toString(),
@@ -76,6 +81,7 @@ export default function NuevaCotizacionMejorada() {
         origen: calculoOrigen.origen,
         destino: calculoOrigen.destino,
         subtotal: calculoOrigen.precioVenta.toString(),
+        kmEstimado: kmEstimadoTotal.toString(),
         // Precargar información de la carga si existe
         tipoCarga: calculoOrigen.tipoCarga || '',
         pesoCarga: calculoOrigen.pesoCarga?.toString() || '',
